@@ -1,6 +1,6 @@
 <?php
 
-require __DIR__.'/classes/komtet-kassa-php-sdk/autoload.php';
+require __DIR__.'/vendors/komtet-kassa-php-sdk/autoload.php';
 
 use Komtet\KassaSdk\Client;
 use Komtet\KassaSdk\QueueManager;

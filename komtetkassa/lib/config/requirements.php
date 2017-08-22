@@ -13,7 +13,7 @@ return array(
     ),
     'php'=>array(
         'strict'=>true,
-        'version'=>'>=7.0.0',
+        'version'=>'>=5.4.0',
     ),
 );
 //EOF
