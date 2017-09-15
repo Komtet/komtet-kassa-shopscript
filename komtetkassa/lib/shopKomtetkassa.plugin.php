@@ -59,6 +59,16 @@ class shopKomtetkassaPlugin extends shopPlugin {
         return array('RUB');
     }
 
+    public function getCallbackUrl($absolute = true, $path) {
+        $routing = wa()->getRouting();
+
+        $route_params = array(
+            'plugin' => $this->id,
+            'result' => $path,
+        );
+        return preg_replace('@^https://@', 'http://', $routing->getUrl('shop/frontend/', $route_params, $absolute));
+    }
+
     public function fiscalize($params) {
         $this->processReceipt($params, 'payment');
     }

@@ -107,8 +107,7 @@ return array(
             "Скопируйте значение данного поля и вставьте его в личном кабинете КОМТЕТ: " .
             "<a href='https://kassa.komtet.ru/manage/shops'>Магазины</a><br><br>"
         ),
-        'value'        => wa()->getRootUrl(true, true) . "shop/komtetkassa/success/", // значение по умолчанию
-        'control_type' => waHtmlControl::INPUT,
+        'control_type' => waHtmlControl::CUSTOM.' shopKomtetkassa::getSuccessUrl',
     ),
 
     'komtet_failure_url'  => array(
@@ -117,8 +116,7 @@ return array(
             "Скопируйте значение данного поля и вставьте его в личном кабинете КОМТЕТ: " .
             "<a href='https://kassa.komtet.ru/manage/shops'>Магазины</a><br><br>"
         ),
-        'value'        => wa()->getRootUrl(true, true) . "shop/komtetkassa/failure/", // значение по умолчанию
-        'control_type' => waHtmlControl::INPUT,
+        'control_type' => waHtmlControl::CUSTOM.' shopKomtetkassa::getFailureUrl',
     ),
 
     'komtet_log'  => array(
