@@ -28,15 +28,6 @@ return array(
         'control_type'=> waHtmlControl::INPUT,
     ),
 
-    'komtet_print_check'  => array(
-        'title'        => "Печатать бумажный чек?",
-        'description'  => array(
-            "Вы можете включить или выключить печать бумажного чека."
-        ),
-        'value'        => 1, // значение по умолчанию
-        'control_type' => waHtmlControl::CHECKBOX,
-    ),
-
     'komtet_queue_id'  => array(
         'title'        => "Идентификатор очереди",
         'value'        => '', // значение по умолчанию
@@ -44,35 +35,24 @@ return array(
     ),
 
     'komtet_tax_type'  => array(
-        'title'        => "Система налогооблажения",
+        'title'        => "Система налогообложения по умолчанию",
+        'description'  => array(
+            "Систему налогообложения можно задать отдельно для каждого способа оплаты (см. ниже). ".
+            "Данная настройка будет учитываться для новых способов оплаты, добавленных ПОСЛЕ сохранения настроек ".
+            "данного плагина.<br><br>"
+        ),
         'value'        => 1, // значение по умолчанию
         'control_type' => waHtmlControl::SELECT,
-        'options' => array(
-            array(
-                'value' => 0,
-                'title' => 'ОСН',
-            ),
-            array(
-                'value' => 1,
-                'title' => 'УСН доход',
-            ),
-            array(
-                'value' => 2,
-                'title' => 'УСН доход - расход',
-            ),
-            array(
-                'value' => 3,
-                'title' => 'ЕНВД',
-            ),
-            array(
-                'value' => 4,
-                'title' => 'ЕСН',
-            ),
-            array(
-                'value' => 5,
-                'title' => 'Патент',
-            ),
+        'options_callback' => array('shopKomtetkassa', 'taxTypesValues')
+    ),
+
+    'komtet_payment_types' => array(
+        'title'        => "Способы оплаты",
+        'description' => array(
+            "Выбирете способы оплаты, для которых будет проводиться фискализация платежей, ".
+            "какому средству оплаты соответствует выбранный способ, какой требуется чек и система налогообложения<br><br>"
         ),
+        'control_type' => waHtmlControl::CUSTOM . ' shopKomtetkassa::getPaymentTypes'
     ),
 
     'komtet_delivery_tax'  => array(

@@ -9,7 +9,9 @@ class shopKomtetkassaPluginFrontendController extends waController {
         }
 
         $result = waRequest::param('result');
-        $url = wa()->getRootUrl(true, true) . "shop/komtetkassa/" . $result . "/";
+        $plugin = wa()->getPlugin('komtetkassa');
+
+        $url = $plugin->getCallbackUrl(true, $result);
 
         $plugin = wa()->getPlugin('komtetkassa');
         $komtet_secret_key = $plugin->getSettings('komtet_secret_key');

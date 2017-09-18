@@ -27,6 +27,7 @@ class shopKomtetkassaPlugin extends shopPlugin {
     private $komtet_print_check;
     private $komtet_queue_id;
     private $komtet_tax_type;
+    private $komtet_payment_types;
     private $komtet_delivery_tax;
     private $komtet_alert;
     private $komtet_alert_email;
@@ -41,14 +42,15 @@ class shopKomtetkassaPlugin extends shopPlugin {
         $this->komtet_print_check = (bool) $this->getSettings('komtet_print_check');
         $this->komtet_queue_id = $this->getSettings('komtet_queue_id');
         $this->komtet_tax_type = (int) $this->getSettings('komtet_tax_type');
+        $this->komtet_payment_types = $this->getSettings('komtet_payment_types');
         $this->komtet_delivery_tax = (int) $this->getSettings('komtet_delivery_tax');
         $this->komtet_alert = (bool) $this->getSettings('komtet_alert');
 
-        $main_shop_email = $this->validateEmail(wa('shop')->getConfig()->getGeneralSettings('email'));
+        $this->main_shop_email = $this->validateEmail(wa('shop')->getConfig()->getGeneralSettings('email'));
         $this->komtet_alert_email = $this->validateEmail($this->getSettings('komtet_alert_email'));
 
         if(!$this->komtet_alert_email) {
-            $this->komtet_alert_email = $main_shop_email;
+            $this->komtet_alert_email = $this->main_shop_email;
         }
     }
 
@@ -91,19 +93,25 @@ class shopKomtetkassaPlugin extends shopPlugin {
             return false;
         }
 
-		$client = new Client($this->komtet_shop_id, $this->komtet_secret_key);
-		$client->setHost($this->komtet_api_url);
-		$manager = new QueueManager($client);
-		$manager->registerQueue('ss-queue', $this->komtet_queue_id);
-
         $order_id = $params['order_id'];
         $order = shopPayment::getOrderData($order_id, $this);
         $this->extendItems($order);
 
         $payment_id = $order->params['payment_id'];
 
+        if(!isset($this->komtet_payment_types[$payment_id])) {
+            return;
+        }
+
+		$client = new Client($this->komtet_shop_id, $this->komtet_secret_key);
+		$client->setHost($this->komtet_api_url);
+		$manager = new QueueManager($client);
+		$manager->registerQueue('ss-queue', $this->komtet_queue_id);
+
         if($this->komtet_log) {
             $this->writeLog($params);
+            $this->writeLog($this->komtet_payment_types);
+            $this->writeLog($payment_id . ':' . $order->params['payment_plugin']);
             $this->writeLog($order->items);
         }
 
@@ -127,12 +135,23 @@ class shopKomtetkassaPlugin extends shopPlugin {
             }
         }
 
+        $tax_type = isset($this->komtet_payment_types[$payment_id])
+            && isset($this->komtet_payment_types[$payment_id]['tax_type'])
+            ? (int) $this->komtet_payment_types[$payment_id]['tax_type']
+            : ($this->komtet_tax_type ? $this->komtet_tax_type : 0);
+
 		if($operation == 'payment') {
-			$check = Check::createSell($order_id, $user, $this->komtet_tax_type);
+			$check = Check::createSell($order_id, $user, $tax_type);
 		} else {
-			$check = Check::createSellReturn($order_id, $user, $this->komtet_tax_type);
+			$check = Check::createSellReturn($order_id, $user, $tax_type);
 		}
-		$check->setShouldPrint($this->komtet_print_check);
+
+		$print_check = isset($this->komtet_payment_types[$payment_id])
+            && isset($this->komtet_payment_types[$payment_id]['fisc_receipt_type'])
+            ? ($this->komtet_payment_types[$payment_id]['fisc_receipt_type'] == 'print_email' ? true : false)
+            : true;
+
+		$check->setShouldPrint($print_check);
 
         foreach($order->items as $item) {
 
@@ -183,7 +202,16 @@ class shopKomtetkassaPlugin extends shopPlugin {
 	    }
 
         // Итоговая сумма расчёта
-		$payment = Payment::createCard(round($order->total, 2)); // или createCash при оплате наличными
+        $payment_type = isset($this->komtet_payment_types[$payment_id])
+            && isset($this->komtet_payment_types[$payment_id]['fisc_payment_type'])
+            ? $this->komtet_payment_types[$payment_id]['fisc_payment_type']
+            : 'card';
+
+        if($payment_type == 'card') {
+            $payment = Payment::createCard(round($order->total, 2)); // или createCash при оплате наличными
+        } else {
+            $payment = Payment::createCash(round($order->total, 2)); // или createCash при оплате наличными
+        }
 		$check->addPayment($payment);
 
 		if($this->komtet_log) {
@@ -346,6 +374,25 @@ class shopKomtetkassaPlugin extends shopPlugin {
             waLog::log($message, self::LOG_FILE_NAME);
         } else {
             waLog::dump($message, self::LOG_FILE_NAME);
+        }
+    }
+
+    private function emailNotification($subj, $message) {
+        if($this->main_shop_email && $this->lifepay_alert_email) {
+            $mail_message = new waMailMessage($subj, $message, 'text/plain');
+            // Указываем отправителя
+            $mail_message->setFrom($this->main_shop_email);
+            // Задаём получателя
+            $mail_message->setTo($this->komtet_alert_email);
+            // Отправка письма
+            $mail_message->send();
+        } else {
+            if(!$this->main_shop_email) {
+                $this->writeLog("Некорректный основной email-адрес магазина, проверьте настройки");
+            }
+            if(!$this->komtet_alert_email) {
+                $this->writeLog("Некорректный email для уведомлений");
+            }
         }
     }
 
