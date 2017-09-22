@@ -21,6 +21,10 @@ class shopKomtetkassaPlugin extends shopPlugin {
     const KOMTET_ERROR = 2;
     const INT_MULTIPLICATOR = 100;
 
+    const STATE_ID = 'fiscalised';
+    const ACTION_ID = 'fiscalise';
+
+    private $komtet_complete_action;
     private $komtet_api_url;
     private $komtet_shop_id;
     private $komtet_secret_key;
@@ -36,6 +40,7 @@ class shopKomtetkassaPlugin extends shopPlugin {
     private function init() {
         $this->komtet_log = (bool) $this->getSettings('komtet_log');
 
+        $this->komtet_complete_action = (bool) $this->getSettings('komtet_complete_action');
         $this->komtet_api_url = filter_var($this->getSettings('komtet_api_url'), FILTER_VALIDATE_URL);
         $this->komtet_shop_id = $this->getSettings('komtet_shop_id');
         $this->komtet_secret_key = $this->getSettings('komtet_secret_key');
@@ -52,6 +57,51 @@ class shopKomtetkassaPlugin extends shopPlugin {
         if(!$this->komtet_alert_email) {
             $this->komtet_alert_email = $this->main_shop_email;
         }
+
+        $wCfg = shopWorkflow::getConfig();
+        if(!isset($wCfg['states'][self::STATE_ID])) {
+            $wCfg['states'][self::STATE_ID] = array (
+				'name' => 'Фискализирован',
+				'options' => array (
+					'style' => array (
+						'color' => '#00a681',
+						'font-style' => 'italic',
+					),
+					'icon' => 'icon16 ss paid',
+				),
+				'available_actions' => array (
+					0 => 'ship',
+					1 => 'complete',
+					2 => 'comment',
+					3 => 'refund',
+					4 => 'message',
+				),
+			);
+			shopWorkflow::setConfig($wCfg);
+        }
+        if(!isset($wCfg['actions'][self::ACTION_ID])) {
+            $wCfg['actions'][self::ACTION_ID] = array (
+				'name' => 'Фискализировать',
+				'options' => array (
+					'position' => '',
+					'button_class' => '',
+					'border_color' => '00b17e',
+					'log_record' => 'По заказу пробит чек',
+				),
+				'state' => self::STATE_ID,
+				'classname' => 'shopWorkflowAction',
+				'id' => self::ACTION_ID
+			);
+			$enabled_state_ids = array('paid', 'completed');
+			foreach($enabled_state_ids as $state_id) {
+			    if (isset($wCfg['states'][$state_id]['available_actions'])
+			            && !in_array(self::ACTION_ID, $wCfg['states'][$state_id]['available_actions'])) {
+			        $wCfg['states'][$state_id]['available_actions'][] = self::ACTION_ID;
+			    }
+			}
+			shopWorkflow::setConfig($wCfg);
+        }
+
     }
 
     /**
@@ -59,6 +109,10 @@ class shopKomtetkassaPlugin extends shopPlugin {
      */
     public function allowedCurrency() {
         return array('RUB');
+    }
+
+    public function getActionId() {
+        return self::ACTION_ID;
     }
 
     public function getCallbackUrl($absolute = true, $path) {
@@ -83,6 +137,10 @@ class shopKomtetkassaPlugin extends shopPlugin {
 
         $this->init();
 
+        if($params['action_id'] == 'complete' && !$this->komtet_complete_action) {
+            return;
+        }
+
         if(!$this->komtet_api_url) {
             $this->pluginError(self::REQUIRED_URL_ERROR);
             return false;
@@ -98,6 +156,11 @@ class shopKomtetkassaPlugin extends shopPlugin {
         $this->extendItems($order);
 
         $payment_id = $order->params['payment_id'];
+
+        if($params['before_state_id'] == self::STATE_ID && $operation != 'refund') {
+            $this->writeLog("Order $order_id already fiscalised");
+            return;
+        }
 
         if(!isset($this->komtet_payment_types[$payment_id])) {
             return;
@@ -169,7 +232,7 @@ class shopKomtetkassaPlugin extends shopPlugin {
 			$discount = $item['base_price'] * $item['quantity'] - $item['total'];
 
 			$position = new Position(
-				$item['name'] . ($item['sku'] != '' ? ", " . $item['sku'] : ''),
+				html_entity_decode($item['name'] . ($item['sku'] != '' ? ", " . $item['sku'] : '')),
 				round($item['base_price'] / self::INT_MULTIPLICATOR, 2),
 				intval($item['quantity']),
 				round($item['total'] / self::INT_MULTIPLICATOR, 2),

@@ -55,6 +55,16 @@ return array(
         'control_type' => waHtmlControl::CUSTOM . ' shopKomtetkassa::getPaymentTypes'
     ),
 
+    'komtet_complete_action'  => array(
+        'title'        => "Включить фискализацию по событию Заказ выполнен",
+        'description'  => array(
+            "В некоторых случаях, когда статусы заказа меняются внешними системами, заказ может миновать статус Оплачен. ".
+            "Используя данный выключатель, можно использовать для фискализации событие Заказ выполнен<br><br>"
+        ),
+        'value'        => 0, // значение по умолчанию
+        'control_type' => waHtmlControl::CHECKBOX,
+    ),
+
     'komtet_delivery_tax'  => array(
         'title'        => "Ставка налога услуги Доставка, %",
         'value'        => 0, // значение по умолчанию

@@ -29,6 +29,17 @@ class shopKomtetkassaPluginFrontendController extends waController {
 
         if($result == "success") {
             $plugin->writeLog($json);
+            $order_id = $json['external_id'];
+
+            $workflow = new shopWorkflow();
+            $order_model = new shopOrderModel();
+			$order = $order_model->getById($order_id);
+			$action = $plugin->getActionId();
+			$actions = $workflow->getStateById($order['state_id'])->getActions($order);
+
+			if (isset($actions[$action])) {
+			    $workflow->getActionById($action)->run($order_id);
+			}
         } else {
             $plugin->pluginError($plugin::KOMTET_ERROR, $json);
         }
