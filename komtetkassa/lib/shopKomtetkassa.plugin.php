@@ -122,7 +122,7 @@ class shopKomtetkassaPlugin extends shopPlugin {
             'plugin' => $this->id,
             'result' => $path,
         );
-        return preg_replace('@^https://@', 'http://', $routing->getUrl('shop/frontend/', $route_params, $absolute));
+        return $routing->getUrl('shop/frontend/', $route_params, $absolute);
     }
 
     public function fiscalize($params) {
