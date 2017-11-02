@@ -66,9 +66,10 @@ return array(
     ),
 
     'komtet_delivery_tax'  => array(
-        'title'        => "Ставка налога услуги Доставка, %",
-        'value'        => 0, // значение по умолчанию
-        'control_type' => waHtmlControl::INPUT,
+        'title'        => "Ставка налога услуги \"Доставка\"",
+        'value'        => 'no', // значение по умолчанию
+        'control_type' => waHtmlControl::SELECT,
+        'options_callback' => array('shopKomtetkassa', 'vatValues')
     ),
 
     'komtet_alert'  => array(

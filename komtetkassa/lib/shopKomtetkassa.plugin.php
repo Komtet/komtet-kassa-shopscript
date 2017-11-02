@@ -48,7 +48,7 @@ class shopKomtetkassaPlugin extends shopPlugin {
         $this->komtet_queue_id = $this->getSettings('komtet_queue_id');
         $this->komtet_tax_type = (int) $this->getSettings('komtet_tax_type');
         $this->komtet_payment_types = $this->getSettings('komtet_payment_types');
-        $this->komtet_delivery_tax = (int) $this->getSettings('komtet_delivery_tax');
+        $this->komtet_delivery_tax = $this->getSettings('komtet_delivery_tax');
         $this->komtet_alert = (bool) $this->getSettings('komtet_alert');
 
         $this->main_shop_email = $this->validateEmail(wa('shop')->getConfig()->getGeneralSettings('email'));
