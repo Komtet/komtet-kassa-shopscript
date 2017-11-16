@@ -366,17 +366,12 @@ class shopKomtetkassaPlugin extends shopPlugin {
     }
 
     /**
-     * Life-Pay принимает номера телефонов только в формате 7хххххххххх
-     * и ругается, если номер не соответствует формату и, соответственно, не принимает чек,
-     * что недопустимо.
      * Валидатор пропускает номера телефонов МОпС РФ вида:
      *  +71234567890
      *   71234567890
      *   81234567890
      *    1234567890
      * Все остальные номера игнорируются.
-     * Валидатор проверяет номер телефона на соответствие формату и заменяет код страны
-     * на 7 в соответствии с форматом, который принимает Life-Pay
      */
     private function validatePhone($phone) {
         if(preg_match(self::PHONE_REGEXP, $phone, $matches)) {
@@ -385,10 +380,7 @@ class shopKomtetkassaPlugin extends shopPlugin {
             return null;
         }
     }
-
-    /**
-     * Life-Pay ругается, если email не соответствует формату и не принимает чек, что недопустимо.
-     */
+	
     private function validateEmail($email) {
         if(filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return $email;
