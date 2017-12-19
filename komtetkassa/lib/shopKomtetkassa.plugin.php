@@ -21,7 +21,7 @@ class shopKomtetkassaPlugin extends shopPlugin {
     const KOMTET_ERROR = 2;
     const INT_MULTIPLICATOR = 100;
 
-    const ACTION_ID = 'fiscalise';
+    const ACTION_ID = 'fiscalise_internal_action';
 
     private $komtet_complete_action;
     private $komtet_api_url;
@@ -548,6 +548,9 @@ HTML
     }
 
     /**
+     * Плагин принимает номера телефонов только в формате 7хххххххххх
+     * и ругается, если номер не соответствует формату и, соответственно, не принимает чек,
+     * что недопустимо.
      * Валидатор пропускает номера телефонов МОпС РФ вида:
      *  +71234567890
      *   71234567890
@@ -555,7 +558,7 @@ HTML
      *    1234567890
      * Все остальные номера игнорируются.
      * Валидатор проверяет номер телефона на соответствие формату и заменяет код страны
-     * на 7 в соответствии с форматом
+     * на 7 в соответствии с форматом, который принимает плагин
      */
     private function validatePhone($phone) {
         if(preg_match(self::PHONE_REGEXP, $phone, $matches)) {
@@ -565,6 +568,9 @@ HTML
         }
     }
 
+    /**
+     * Плагин ругается, если email не соответствует формату и не принимает чек, что недопустимо.
+     */
     private function validateEmail($email) {
         if(filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return $email;
@@ -617,7 +623,7 @@ HTML
     }
 
     private function emailNotification($subj, $message) {
-        if($this->main_shop_email && $this->lifepay_alert_email) {
+        if($this->main_shop_email && $this->komtet_alert_email) {
             $mail_message = new waMailMessage($subj, $message, 'text/plain');
             // Указываем отправителя
             $mail_message->setFrom($this->main_shop_email);

@@ -9,27 +9,30 @@ try {
 	$model->query($sql);
 }
 
-$ACTION_ID = 'fiscalise';
+// Скрытый (внутренний) экшн только для добавления записи в историю по заказу.
+$ACTION_ID = 'fiscalise_internal_action';
 
 $wCfg = shopWorkflow::getConfig();
-$wCfg['actions'][$ACTION_ID] = array (
-    'name' => 'Фискализировать',
-    'options' => array (
-        'position' => '',
-        'button_class' => '',
-        'log_record' => 'Чек по заказу фискализирован',
-    ),
-    'state' => null,
-    'classname' => 'shopWorkflowAction',
-    'internal' => true,
-    'id' => $ACTION_ID
-);
+if(!isset($wCfg['actions'][$ACTION_ID])) {
+    $wCfg['actions'][$ACTION_ID] = array(
+        'name' => 'Фискализировать',
+        'options' => array(
+            'position' => '',
+            'button_class' => '',
+            'log_record' => 'Чек по заказу фискализирован',
+        ),
+        'state' => null,
+        'classname' => 'shopWorkflowAction',
+        'internal' => true,
+        'id' => $ACTION_ID
+    );
 
-$enabled_state_ids = array('paid', 'completed');
-foreach($enabled_state_ids as $state_id) {
-    if (isset($wCfg['states'][$state_id]['available_actions'])
-        && !in_array($ACTION_ID, $wCfg['states'][$state_id]['available_actions'])) {
-        $wCfg['states'][$state_id]['available_actions'][] = $ACTION_ID;
+    $enabled_state_ids = array('paid', 'completed');
+    foreach ($enabled_state_ids as $state_id) {
+        if (isset($wCfg['states'][$state_id]['available_actions'])
+            && !in_array($ACTION_ID, $wCfg['states'][$state_id]['available_actions'])) {
+            $wCfg['states'][$state_id]['available_actions'][] = $ACTION_ID;
+        }
     }
+    shopWorkflow::setConfig($wCfg);
 }
-shopWorkflow::setConfig($wCfg);
