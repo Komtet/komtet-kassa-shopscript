@@ -174,7 +174,7 @@ HTML
 
         $payment_id = $order->params['payment_id'];
 
-        if($order['fiscalised']) {
+        if($operation == 'payment' && $order['fiscalised']) {
             $this->writeLog("Order $order_id already fiscalised");
             return;
         }
