@@ -170,7 +170,6 @@ HTML
 
         $order_id = $params['order_id'];
         $order = $this->getOrderData($order_id, $this);
-        $this->extendItems($order);
 
         $payment_id = $order->params['payment_id'];
 
@@ -245,18 +244,16 @@ HTML
 				    $vat = new Vat(Vat::RATE_NO);
 				}
             }
-
-			$discount = $item['base_price'] * $item['quantity'] - $item['total'];
-
-			$position = new Position(
-				html_entity_decode($item['name'] . ($item['sku'] != '' ? ", " . $item['sku'] : '')),
-				round($item['base_price'] / self::INT_MULTIPLICATOR, 2),
-				intval($item['quantity']),
-				round($item['total'] / self::INT_MULTIPLICATOR, 2),
-				$discount,
-				$vat
-			);
-			$check->addPosition($position);
+		
+		$total = round($item['price'] * $item['quantity'] - $item['total_discount'], 2);
+		$position = new Position(
+			html_entity_decode($item['name'] . ($item['sku'] != '' ? ", " . $item['sku'] : '')),
+			round($item['price'], 2),
+			intval($item['quantity']),
+			$total,
+			round($item['total_discount'], 2),
+			$vat);
+		$check->addPosition($position);
 
         }
 
@@ -487,65 +484,6 @@ HTML
 		);
 		return waOrder::factory($order_data);
 	}
-
-    /**
-     * Скопировано с shopPrintformPlugin для расчета скидок и налогов по каждому товару
-     * @param waOrder $order
-     * @return array
-     */
-    private function extendItems(&$order) {
-        $items = $order->items;
-
-        $discount = intval(self::INT_MULTIPLICATOR * $order->discount);
-        $shipping = intval(self::INT_MULTIPLICATOR * $order->shipping);
-        $total = intval(self::INT_MULTIPLICATOR * $order->total);
-        foreach ($items as & $item) {
-            $item['currency'] = $order->currency;
-            $item['base_price'] = intval(self::INT_MULTIPLICATOR * $item['price']);
-
-            if (!empty($item['total_discount'])) {
-                $discount -= intval(self::INT_MULTIPLICATOR * $item['total_discount']);
-                $item['total'] -= $item['total_discount'];
-            }
-            $item['total'] = intval(self::INT_MULTIPLICATOR * $item['total']);
-        }
-
-        unset($item);
-        $taxes_params = array(
-            'billing'  => $order->billing_address,
-            'shipping' => $order->shipping_address,
-        );
-        shopTaxes::apply($items, $taxes_params, $order['currency']);
-
-        if ($discount) {
-            #calculate discount as part of price
-            if ($total + $discount - $shipping > 0) {
-                $k = 1.0 - $discount / ($total + $discount - $shipping);
-            } else {
-                $k = 0.0;
-            }
-
-            $summ_total = 0;
-            $max_total = 0;
-            $max_total_item_index = 0;
-            foreach ($items as $idx => & $item) {
-                $item['total'] = intval($k * $item['total']);
-                $summ_total += $item['total'];
-                if ($item['total'] > $max_total) {
-                    $max_total = $item['total'];
-                    $max_total_item_index = $idx;
-                }
-            }
-            unset($item);
-
-            $diff = $total - $shipping - $summ_total;
-            if ($diff != 0) {
-                $items[$max_total_item_index]['total'] += $diff;
-            }
-
-        }
-        $order->items = $items;
-    }
 
     /**
      * Плагин принимает номера телефонов только в формате 7хххххххххх
