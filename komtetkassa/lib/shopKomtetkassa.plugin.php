@@ -353,7 +353,6 @@ HTML
         }
         else
         {
-            $currentDiscount = ($discount_total - $usedDiscountSumm);
             $total = $item['price']*$item['quantity'] - ($discount_total - $usedDiscountSumm); 
         } 
         return $total;
