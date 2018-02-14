@@ -230,10 +230,17 @@ HTML
             ? ($this->komtet_payment_types[$payment_id]['fisc_receipt_type'] == 'print_email' ? true : false)
             : true;
 
-		$check->setShouldPrint($print_check);
+		$check->setShouldPrint($print_check); 
+        
 
-        foreach($order->items as $item) {
+        $countPositions = count($order->items); // кол-во элементов в массиве
+        $loopCounter = 0; // счетчик цикла
+        $lastItemLoop = false; // bool последний элемент массива
+        $usedDiscountSumm = 0; // сумма примененной скидки  
 
+        foreach($order->items as $item) 
+        { 
+            $loopCounter++; 
             if(!isset($item['tax_included']) || $item['tax_included'] == 0) {
                 $vat = new Vat(Vat::RATE_NO);
             } else {
@@ -243,18 +250,28 @@ HTML
 				    $this->writeLog($e);
 				    $vat = new Vat(Vat::RATE_NO);
 				}
+            } 
+            if ($order->discount>0) // наличия скидки 
+            {  
+                if ($loopCounter == $countPositions)
+                {
+                    $lastItemLoop = true;
+                } 
+                $total = $this->CountTotalPosition($item,$order,$lastItemLoop,$usedDiscountSumm); 
             }
-		
-		$total = round($item['price'] * $item['quantity'] - $item['total_discount'], 2);
-		$position = new Position(
-			html_entity_decode($item['name'] . ($item['sku'] != '' ? ", " . $item['sku'] : '')),
-			round($item['price'], 2),
-			intval($item['quantity']),
-			$total,
-			round($item['total_discount'], 2),
-			$vat);
-		$check->addPosition($position);
+            else // без скидки
+            { 
+                $total = round($item['price'] * $item['quantity'], 2);
+            }  
 
+            $position = new Position(
+                html_entity_decode($item['name'] . ($item['sku'] != '' ? ", " . $item['sku'] : '')),
+                round($item['price'], 2),
+                intval($item['quantity']),
+                $total,
+                round($item['total_discount'], 2),
+                $vat);
+            $check->addPosition($position); 
         }
 
         if(intval($order['shipping']) > 0) {
@@ -318,6 +335,28 @@ HTML
         } else {
             $this->pluginError(self::KOMTET_ERROR, $result);
         }
+
+    }
+
+
+    private function CountTotalPosition($item,$order,$lastItemLoop,&$usedDiscountSumm) // подсчет суммы за позицию в чеке с учетом скидки
+    { 
+        $discount_total = $order->discount; // скидка на весь чек
+        $shipping_total = $order->shipping; // цена за доставку
+        $summ_total = $order->total; // общая сумма за чек
+
+        if ($lastItemLoop == false)
+        {
+            $currentDiscount = $item['quantity']*round(($item['price']*($discount_total/(($summ_total-$shipping_total)+$discount_total))),2);
+            $total = $item['price']*$item['quantity'] - $currentDiscount;
+            $usedDiscountSumm += $currentDiscount; 
+        }
+        else
+        {
+            $currentDiscount = ($discount_total - $usedDiscountSumm);
+            $total = $item['price']*$item['quantity'] - ($discount_total - $usedDiscountSumm); 
+        } 
+        return $total;
 
     }
 
