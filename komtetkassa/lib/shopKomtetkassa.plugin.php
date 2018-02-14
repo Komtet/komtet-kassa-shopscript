@@ -251,7 +251,7 @@ HTML
 				    $vat = new Vat(Vat::RATE_NO);
 				}
             } 
-            if ($order->discount>0) // наличия скидки 
+            if ($order->discount>0) // наличие скидки 
             {  
                 if ($loopCounter == $countPositions)
                 {
