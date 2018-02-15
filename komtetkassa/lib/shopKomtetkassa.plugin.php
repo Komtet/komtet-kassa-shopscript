@@ -89,127 +89,124 @@ class shopKomtetkassaPlugin extends shopPlugin {
     }
 
     public function backend_orders($params) {
-    	return array(
-		    'sidebar_bottom_li' => <<<HTML
-<script type="text/javascript">
-jQuery(function() {
-	"use strict";
-	var $ = jQuery,
-		already_called = false,
-		block_event = false;
-	
-	var fn = function() {
-		if($('#s-orders-views .selected').data('view') !== 'split') {
-			return;
-		}
-	    var orders = [];
-        $("#order-list").find("li.order").each(function() {
-            orders.push($(this).data("order-id"));
-        });
-        $.ajax({
-            url: "?plugin=komtetkassa&action=getorders",
-            data: {orders: orders},
-            dataType: 'json',
-            method: "POST",
-            success: function(data) {
-                if(data['status'] == 'ok') {
-                	block_event = true;
-                    $("#order-list").find("li.order").each(function() {
-                        var _t = $(this),
-                            order_id = _t.data("order-id"),
-                            order;
-                        
-                        if(data.data[order_id]) {
-                        	order = _t.find("div.details");
-                        	if(!order.hasClass('fiscalised')) {
-                            	order.addClass('fiscalised')
-                            		.append("<p class='hint' style='color: green;'>Фискализирован</p>")
-                            }
-                        }
-                    });
-                    block_event = false;
-                } else {
-                    $.shop.trace('komtetkassa.getorders', data);
-                }
-            }
-        });
-        already_called = false;
-	}
-	
-	$("#s-content").on("DOMSubtreeModified", "#order-list", function(e) {
-        if(already_called) {
-            clearTimeout(already_called);
-        }
-        if(!block_event) {
-            already_called = setTimeout(fn, 300);
-        }
-    });
-});
-</script>
-HTML
-	    );
+        return array(
+            'sidebar_bottom_li' => <<<HTML
+            <script type="text/javascript">
+                jQuery(function() {
+                    "use strict";
+                     var $ = jQuery,
+                     already_called = false,
+                     block_event = false;
+                     var fn = function() {
+                     if ($('#s-orders-views .selected').data('view') !== 'split') {
+                         return;
+                     }
+                     var orders = [];
+                     $("#order-list").find("li.order").each(function() {
+                         orders.push($(this).data("order-id"));
+                     });
+                     $.ajax({
+                         url: "?plugin=komtetkassa&action=getorders",
+                         data: {orders: orders},
+                         dataType: 'json',
+                         method: "POST",
+                         success: function(data) 
+			 {
+                             if (data['status'] == 'ok') 
+			     {
+                	         block_event = true;
+                                 $("#order-list").find("li.order").each(function() {
+                                     var _t = $(this),
+                                     order_id = _t.data("order-id"),
+                                     order; 
+                                     if (data.data[order_id]) 
+				     {
+                        	         order = _t.find("div.details");
+                        	         if (!order.hasClass('fiscalised')) 
+					 {
+                            	             order.addClass('fiscalised')
+                            	             .append("<p class='hint' style='color: green;'>Фискализирован</p>")
+                                         }
+                                     }
+                                 });
+                                 block_event = false;
+                             } else {
+                                 $.shop.trace('komtetkassa.getorders', data);
+                             }
+                         }
+                     });
+                 already_called = false;
+	     }
+	     $("#s-content").on("DOMSubtreeModified", "#order-list", function(e) {
+             if(already_called) {
+                 clearTimeout(already_called);
+             }
+             if(!block_event) {
+                 already_called = setTimeout(fn, 300);
+             }
+         });
+     });
+     </script>
+     HTML
+     );
     }
 
     private function processReceipt($params, $operation = 'payment') {
 
         $this->init();
 
-        if($params['action_id'] == 'complete' && !$this->komtet_complete_action) {
+        if ($params['action_id'] == 'complete' && !$this->komtet_complete_action) {
             return;
         }
-
-        if(!$this->komtet_api_url) {
+        if (!$this->komtet_api_url) {
             $this->pluginError(self::REQUIRED_URL_ERROR);
             return false;
         }
-
-        if(!$this->komtet_shop_id || !$this->komtet_secret_key || !$this->komtet_queue_id) {
+        if (!$this->komtet_shop_id || !$this->komtet_secret_key || !$this->komtet_queue_id) {
             $this->pluginError(self::REQUIRED_PROPERTY_ERROR);
             return false;
         }
 
         $order_id = $params['order_id'];
-        $order = $this->getOrderData($order_id, $this);
-
+        $order = $this->getOrderData($order_id, $this); 
         $payment_id = $order->params['payment_id'];
 
-        if($operation == 'payment' && $order['fiscalised']) {
+        if ($operation == 'payment' && $order['fiscalised']) {
             $this->writeLog("Order $order_id already fiscalised");
             return;
         }
-
-        if(!isset($this->komtet_payment_types[$payment_id])) {
+        if (!isset($this->komtet_payment_types[$payment_id])) {
             return;
         }
+	    $client = new Client($this->komtet_shop_id, $this->komtet_secret_key);
+	    $client->setHost($this->komtet_api_url);
+	    $manager = new QueueManager($client);
+	    $manager->registerQueue('ss-queue', $this->komtet_queue_id);
 
-		$client = new Client($this->komtet_shop_id, $this->komtet_secret_key);
-		$client->setHost($this->komtet_api_url);
-		$manager = new QueueManager($client);
-		$manager->registerQueue('ss-queue', $this->komtet_queue_id);
-
-        if($this->komtet_log) {
+        if ($this->komtet_log) {
             $this->writeLog($params);
             $this->writeLog($this->komtet_payment_types);
             $this->writeLog($payment_id . ':' . $order->params['payment_plugin']);
             $this->writeLog($order->items);
         }
 
-		// В случае использования на сервере кирилической локали, например ru_RU.UTF-8,
-		// возникает проблема с форматированием json
+	    // В случае использования на сервере кирилической локали, например ru_RU.UTF-8,
+	    // возникает проблема с форматированием json
         $cur_local = setlocale(LC_NUMERIC, 0);
         $local_changed = false;
-        if($cur_local != "en_US.UTF-8") {
+        if ($cur_local != "en_US.UTF-8") {
             setlocale(LC_NUMERIC, "en_US.UTF-8");
             $local_changed = true;
         }
 
-		$user = $this->komtet_alert_email;
+	$user = $this->komtet_alert_email;
         $customer_email = $order->getContactField('email', 'default');
         $customer_phone = $order->getContactField('phone', 'default');
-        if(ifset($customer_email)) {
+        
+	if (ifset($customer_email)) {
             $user = $customer_email;
         } else {
-            if(ifset($customer_phone)) {
+            if (ifset($customer_phone)) {
                 $user = $customer_phone;
             }
         }
@@ -219,48 +216,42 @@ HTML
             ? (int) $this->komtet_payment_types[$payment_id]['tax_type']
             : ($this->komtet_tax_type ? $this->komtet_tax_type : 0);
 
-		if($operation == 'payment') {
-			$check = Check::createSell($order_id, $user, $tax_type);
-		} else {
-			$check = Check::createSellReturn($order_id, $user, $tax_type);
-		}
+	if ($operation == 'payment') {
+	    $check = Check::createSell($order_id, $user, $tax_type);
+	} else {
+            $check = Check::createSellReturn($order_id, $user, $tax_type);
+	}
 
-		$print_check = isset($this->komtet_payment_types[$payment_id])
+	$print_check = isset($this->komtet_payment_types[$payment_id])
             && isset($this->komtet_payment_types[$payment_id]['fisc_receipt_type'])
             ? ($this->komtet_payment_types[$payment_id]['fisc_receipt_type'] == 'print_email' ? true : false)
             : true;
 
-		$check->setShouldPrint($print_check); 
+	$check->setShouldPrint($print_check); 
         
-
         $countPositions = count($order->items); // кол-во элементов в массиве
         $loopCounter = 0; // счетчик цикла
         $lastItemLoop = false; // bool последний элемент массива
         $usedDiscountSumm = 0; // сумма примененной скидки  
 
-        foreach($order->items as $item) 
-        { 
+        foreach ($order->items as $item) { 
             $loopCounter++; 
-            if(!isset($item['tax_included']) || $item['tax_included'] == 0) {
+            if (!isset($item['tax_included']) || $item['tax_included'] == 0) {
                 $vat = new Vat(Vat::RATE_NO);
             } else {
                 try {
-				    $vat = new Vat($item['tax_percent']);
-				} catch (SdkException $e) {
-				    $this->writeLog($e);
-				    $vat = new Vat(Vat::RATE_NO);
-				}
+		    $vat = new Vat($item['tax_percent']);
+	            } catch (SdkException $e) {
+                        $this->writeLog($e);
+                        $vat = new Vat(Vat::RATE_NO);
+                    }
             } 
-            if ($order->discount>0) // наличие скидки 
-            {  
-                if ($loopCounter == $countPositions)
-                {
+            if ($order->discount>0) { // если есть скидка  
+                if ($loopCounter == $countPositions){ // проверка на последний элемент массива
                     $lastItemLoop = true;
                 } 
-                $total = $this->CountTotalPosition($item,$order,$lastItemLoop,$usedDiscountSumm); 
-            }
-            else // без скидки
-            { 
+                $total = $this->CountTotalPosition($item, $order, $lastItemLoop, $usedDiscountSumm); 
+            } else { // без скидки
                 $total = round($item['price'] * $item['quantity'], 2);
             }  
 
@@ -274,26 +265,24 @@ HTML
             $check->addPosition($position); 
         }
 
-        if(intval($order['shipping']) > 0) {
-
+        if (intval($order['shipping']) > 0) {
             try {
-			    $vat = new Vat($this->komtet_delivery_tax);
-			} catch (SdkException $e) {
-			    $this->writeLog($e);
-			    $vat = new Vat(Vat::RATE_NO);
-			}
+		    $vat = new Vat($this->komtet_delivery_tax);
+		} catch (SdkException $e) {
+                    $this->writeLog($e);
+		    $vat = new Vat(Vat::RATE_NO);
+		}
 
             $position = new Position(
-				"Доставка: " . $order["shipping_name"],
-				round($order['shipping'], 2),
-				1,
-				round($order['shipping'], 2),
-				0,
-				$vat
-			);
-			$check->addPosition($position);
-
-	    }
+	        "Доставка: " . $order["shipping_name"],
+                round($order['shipping'], 2),
+                1,
+                round($order['shipping'], 2),
+                0,
+                $vat
+                );
+            $check->addPosition($position);
+        }
 
         // Итоговая сумма расчёта
         $payment_type = isset($this->komtet_payment_types[$payment_id])
@@ -301,33 +290,30 @@ HTML
             ? $this->komtet_payment_types[$payment_id]['fisc_payment_type']
             : 'card';
 
-        if($payment_type == 'card') {
+        if ($payment_type == 'card') {
             $payment = Payment::createCard(round($order->total, 2)); // или createCash при оплате наличными
         } else {
             $payment = Payment::createCash(round($order->total, 2)); // или createCash при оплате наличными
         }
-		$check->addPayment($payment);
-
-		if($this->komtet_log) {
-			$this->writeLog($check->asArray());
-		}
-
-		$result = null;
-        // Добавляем чек в очередь.
-		try {
-            $result = $manager->putCheck($check, 'ss-queue');
-		} catch (SdkException $e) {
-			$this->pluginError(self::KOMTET_ERROR, $e);
-		}
-
-        if($local_changed) {
-            setlocale(LC_NUMERIC, $cur_local);
+	    
+        $check->addPayment($payment);
+        if ($this->komtet_log) {
+            $this->writeLog($check->asArray());
         }
 
-        if($result) {
+        $result = null;
+        // Добавляем чек в очередь.
+        try {
+            $result = $manager->putCheck($check, 'ss-queue');
+        } catch (SdkException $e) {
+            $this->pluginError(self::KOMTET_ERROR, $e);
+        }
+        if ($local_changed) {
+            setlocale(LC_NUMERIC, $cur_local);
+        }
+        if ($result) {
             $this->setOrderStatus($order_id, 2);
-
-            if($operation == 'payment') {
+            if ($operation == 'payment') {
                 $this->writeLog("Receipt for an order $order_id accepted");
             } else {
                 $this->writeLog("Receipt for an order $order_id refunded");
@@ -335,193 +321,177 @@ HTML
         } else {
             $this->pluginError(self::KOMTET_ERROR, $result);
         }
-
     }
 
-
-    private function CountTotalPosition($item,$order,$lastItemLoop,&$usedDiscountSumm) // подсчет суммы за позицию в чеке с учетом скидки
+    private function CountTotalPosition($item, $order, $lastItemLoop, &$usedDiscountSumm) // подсчет суммы за позицию в чеке с учетом скидки
     { 
         $discount_total = $order->discount; // скидка на весь чек
         $shipping_total = $order->shipping; // цена за доставку
         $summ_total = $order->total; // общая сумма за чек
 
-        if ($lastItemLoop == false)
-        {
-            $currentDiscount = $item['quantity']*round(($item['price']*($discount_total/(($summ_total-$shipping_total)+$discount_total))),2);
-            $total = $item['price']*$item['quantity'] - $currentDiscount;
+        if ($lastItemLoop == false) {
+            $currentDiscount = $item['quantity'] * round(($item['price'] * ($discount_total / (($summ_total - $shipping_total) + $discount_total))), 2); 		
+            $total = $item['price'] * $item['quantity'] - $currentDiscount;
             $usedDiscountSumm += $currentDiscount; 
-        }
-        else
-        {
+        } else {
             $total = $item['price']*$item['quantity'] - ($discount_total - $usedDiscountSumm); 
         } 
         return $total;
-
     }
 
     public function setOrderStatus($order_id, $status) {
         $order_model = new shopOrderModel();
-        $order_model->exec("UPDATE `shop_order` SET fiscalised = i:fiscalised WHERE id = i:order_id", array(
-            'fiscalised' => $status,
-            'order_id'   => $order_id
-        ));
+        $order_model->exec("UPDATE `shop_order` SET fiscalised = i:fiscalised WHERE id = i:order_id", 
+            array('fiscalised' => $status, 'order_id' => $order_id));
     }
 
-	/**
-	 * Копия из shopPayment::getOrderData для расширения интерфейса: необходимо добавить используемый
-	 * флаг статуса фискализации
-	 */
+         /**
+         * Копия из shopPayment::getOrderData для расширения интерфейса: необходимо добавить используемый
+         * флаг статуса фискализации
+         */
     private static function getOrderData($order, $payment_plugin = null) {
-		if (!is_array($order)) {
-			$order_id = shopHelper::decodeOrderId($encoded_order_id = $order);
-			if (!$order_id) {
-				$order_id = $encoded_order_id;
-				$encoded_order_id = shopHelper::encodeOrderId($order_id);
-			}
+        if (!is_array($order)) {
+            $order_id = shopHelper::decodeOrderId($encoded_order_id = $order);
+            if (!$order_id) {
+                $order_id = $encoded_order_id;
+                $encoded_order_id = shopHelper::encodeOrderId($order_id);
+            }
 
-			$om = new shopOrderModel();
-			$order = $om->getOrder($order_id);
-			if (!$order) {
-				return null;
-			}
-			$order['id_str'] = $encoded_order_id;
-		}
+            $om = new shopOrderModel();
+            $order = $om->getOrder($order_id);
+            if (!$order) {
+                return null;
+            }
+            $order['id_str'] = $encoded_order_id;
+        }
 
-		if (!isset($order['id_str'])) {
-			$order['id_str'] = shopHelper::encodeOrderId($order['id']);
-		}
+        if (!isset($order['id_str'])) {
+            $order['id_str'] = shopHelper::encodeOrderId($order['id']);
+        }
 
-		if (!isset($order['params'])) {
+        if (!isset($order['params'])) {
+            $order_params_model = new shopOrderParamsModel();
+            $order['params'] = $order_params_model->get($order['id']);
+        }
+        $convert = false;
+        if ($payment_plugin && is_object($payment_plugin) && (method_exists($payment_plugin, 'allowedCurrency'))) {
+            $allowed_currencies = $payment_plugin->allowedCurrency();
+            $total = $order['total'];
+            $currency_id = $order['currency'];
+            if ($allowed_currencies !== true) {
+                $allowed_currencies = (array)$allowed_currencies;
+                if (!in_array($order['currency'], $allowed_currencies)) {
+                    $config = wa('shop')->getConfig();
+                    /**
+		    * @var shopConfig $config
+		    */
+                    $currencies = $config->getCurrencies();
+                    $matched_currency = array_intersect($allowed_currencies, array_keys($currencies));
+                    if (!$matched_currency) {
+                        if ($payment_plugin instanceof waPayment) {
+                            $message = _w('Payment procedure cannot be processed because required currency %s is not defined in your store settings.');
+                        } else {
+                            $message = _w('Data cannot be processed because required currency %s is not defined in your store settings.');
+                        }
+                        throw new waException(sprintf($message, implode(', ', $allowed_currencies)));
+                    }
+                    $convert = true;
+                    $total = shop_currency($total, $order['currency'], $currency_id = reset($matched_currency), false);
+                }
+            }
+        } elseif (is_array($payment_plugin) || is_string($payment_plugin)) {
+            $total = $order['total'];
+            $currency_id = $order['currency'];
+            $allowed_currencies = (array)$payment_plugin;
+            if (!in_array($order['currency'], $allowed_currencies)) {
+                $config = wa('shop')->getConfig();
+                /**
+		* @var shopConfig $config
+		*/
+                $currencies = $config->getCurrencies();
+                $matched_currency = array_intersect($allowed_currencies, array_keys($currencies));
+                if (!$matched_currency) {
+                    $message = _w('Data cannot be processed because required currency %s is not defined in your store settings.');
+                    throw new waException(sprintf($message, implode(', ', $allowed_currencies)));
+                }
+                $convert = true;
+                $total = shop_currency($total, $order['currency'], $currency_id = reset($matched_currency), false);
+            }
+         } else {
+             $currency_id = $order['currency'];
+             $total = $order['total'];
+         }
+         $items = array();
+         if (!empty($order['items'])) {
+             foreach ($order['items'] as $item) {
+                 ifempty($item['price'], 0.0);
+                 if ($convert) {
+                     $item['price'] = shop_currency($item['price'], $order['currency'], $currency_id, false);
+                 }
+                 $items[] = array(
+		    'id'             => ifset($item['id']),
+		    'name'           => ifset($item['name']),
+		    'sku'            => ifset($item['sku_code']),
+		    'description'    => '',
+		    'price'          => $item['price'],
+		    'quantity'       => ifset($item['quantity'], 0),
+		    'total'          => $item['price'] * $item['quantity'],
+		    'type'           => ifset($item['type'], 'product'),
+		    'product_id'     => ifset($item['product_id']),
+		    'total_discount' => ifset($item['total_discount']),
+                  );
+                 if (isset($item['weight'])) {
+                     $items[count($items) - 1]['weight'] = $item['weight'];
+                 }
+             }
+         }
+         $empty_address = array(
+	    'firstname' => '',
+            'lastname'  => '',
+            'country'   => '',
+            'region'    => '',
+            'city'      => '',
+            'street'    => '',
+            'zip'       => '',
+         );
 
-			$order_params_model = new shopOrderParamsModel();
-			$order['params'] = $order_params_model->get($order['id']);
-		}
-		$convert = false;
-		if ($payment_plugin && is_object($payment_plugin) && (method_exists($payment_plugin, 'allowedCurrency'))) {
-			$allowed_currencies = $payment_plugin->allowedCurrency();
-			$total = $order['total'];
-			$currency_id = $order['currency'];
-			if ($allowed_currencies !== true) {
-				$allowed_currencies = (array)$allowed_currencies;
-
-
-				if (!in_array($order['currency'], $allowed_currencies)) {
-					$config = wa('shop')->getConfig();
-					/**
-					 * @var shopConfig $config
-					 */
-					$currencies = $config->getCurrencies();
-					$matched_currency = array_intersect($allowed_currencies, array_keys($currencies));
-					if (!$matched_currency) {
-						if ($payment_plugin instanceof waPayment) {
-							$message = _w('Payment procedure cannot be processed because required currency %s is not defined in your store settings.');
-						} else {
-							$message = _w('Data cannot be processed because required currency %s is not defined in your store settings.');
-						}
-						throw new waException(sprintf($message, implode(', ', $allowed_currencies)));
-					}
-
-					$convert = true;
-					$total = shop_currency($total, $order['currency'], $currency_id = reset($matched_currency), false);
-				}
-			}
-		} elseif (is_array($payment_plugin) || is_string($payment_plugin)) {
-			$total = $order['total'];
-			$currency_id = $order['currency'];
-
-			$allowed_currencies = (array)$payment_plugin;
-			if (!in_array($order['currency'], $allowed_currencies)) {
-				$config = wa('shop')->getConfig();
-				/**
-				 * @var shopConfig $config
-				 */
-				$currencies = $config->getCurrencies();
-				$matched_currency = array_intersect($allowed_currencies, array_keys($currencies));
-				if (!$matched_currency) {
-					$message = _w('Data cannot be processed because required currency %s is not defined in your store settings.');
-					throw new waException(sprintf($message, implode(', ', $allowed_currencies)));
-				}
-				$convert = true;
-				$total = shop_currency($total, $order['currency'], $currency_id = reset($matched_currency), false);
-			}
-		} else {
-			$currency_id = $order['currency'];
-			$total = $order['total'];
-		}
-		$items = array();
-		if (!empty($order['items'])) {
-			foreach ($order['items'] as $item) {
-
-				ifempty($item['price'], 0.0);
-				if ($convert) {
-					$item['price'] = shop_currency($item['price'], $order['currency'], $currency_id, false);
-				}
-				$items[] = array(
-					'id'             => ifset($item['id']),
-					'name'           => ifset($item['name']),
-					'sku'            => ifset($item['sku_code']),
-					'description'    => '',
-					'price'          => $item['price'],
-					'quantity'       => ifset($item['quantity'], 0),
-					'total'          => $item['price'] * $item['quantity'],
-					'type'           => ifset($item['type'], 'product'),
-					'product_id'     => ifset($item['product_id']),
-					'total_discount' => ifset($item['total_discount']),
-				);
-				if (isset($item['weight'])) {
-					$items[count($items) - 1]['weight'] = $item['weight'];
-				}
-			}
-		}
-
-		$empty_address = array(
-			'firstname' => '',
-			'lastname'  => '',
-			'country'   => '',
-			'region'    => '',
-			'city'      => '',
-			'street'    => '',
-			'zip'       => '',
-		);
-
-		$shipping_address = array_merge($empty_address, shopHelper::getOrderAddress($order['params'], 'shipping'));
-		$billing_address = array_merge($empty_address, shopHelper::getOrderAddress($order['params'], 'billing'));
-		if (!count(array_filter($billing_address, 'strlen'))) {
-			$billing_address = $shipping_address;
-		}
-
-		ifset($order['shipping'], 0.0);
-		ifset($order['discount'], 0.0);
-		ifset($order['tax'], 0.0);
-		if ($convert) {
-			$order['tax'] = shop_currency($order['tax'], $order['currency'], $currency_id, false);
-			$order['shipping'] = shop_currency($order['shipping'], $order['currency'], $currency_id, false);
-			$order['discount'] = shop_currency($order['discount'], $order['currency'], $currency_id, false);
-		}
-		$order_data = array(
-			'id_str'           => ifempty($order['id_str'], $order['id']),
-			'id'               => $order['id'],
-			'fiscalised'       => intval($order['fiscalised']),
-			'contact_id'       => $order['contact_id'],
-			'datetime'         => ifempty($order['create_datetime']),
-			'description'      => sprintf(_w('Payment for order %s'), ifempty($order['id_str'], $order['id'])),
-			'update_datetime'  => ifempty($order['update_datetime']),
-			'paid_datetime'    => empty($order['paid_date']) ? null : ($order['paid_date'].' 00:00:00'),
-			'total'            => ifempty($total, $order['total']),
-			'currency'         => ifempty($currency_id, $order['currency']),
-			'discount'         => $order['discount'],
-			'tax'              => $order['tax'],
-			'payment_name'     => ifset($order['params']['payment_name'], ''),
-			'billing_address'  => $billing_address,
-			'shipping'         => $order['shipping'],
-			'shipping_name'    => ifset($order['params']['shipping_name'], ''),
-			'shipping_address' => $shipping_address,
-			'items'            => $items,
-			'comment'          => ifempty($order['comment'], ''),
-			'params'           => $order['params'],
-		);
-		return waOrder::factory($order_data);
-	}
+         $shipping_address = array_merge($empty_address, shopHelper::getOrderAddress($order['params'], 'shipping'));
+         $billing_address = array_merge($empty_address, shopHelper::getOrderAddress($order['params'], 'billing'));
+         if (!count(array_filter($billing_address, 'strlen'))) {
+             $billing_address = $shipping_address;
+         }
+         ifset($order['shipping'], 0.0);
+         ifset($order['discount'], 0.0);
+         ifset($order['tax'], 0.0);
+         if ($convert) {
+             $order['tax'] = shop_currency($order['tax'], $order['currency'], $currency_id, false);
+             $order['shipping'] = shop_currency($order['shipping'], $order['currency'], $currency_id, false);
+	     $order['discount'] = shop_currency($order['discount'], $order['currency'], $currency_id, false);
+	 }
+         $order_data = array(
+             'id_str'           => ifempty($order['id_str'], $order['id']),
+             'id'               => $order['id'],
+             'fiscalised'       => intval($order['fiscalised']),
+             'contact_id'       => $order['contact_id'],
+             'datetime'         => ifempty($order['create_datetime']),
+             'description'      => sprintf(_w('Payment for order %s'), ifempty($order['id_str'], $order['id'])),
+             'update_datetime'  => ifempty($order['update_datetime']),
+             'paid_datetime'    => empty($order['paid_date']) ? null : ($order['paid_date'].' 00:00:00'),
+             'total'            => ifempty($total, $order['total']),
+             'currency'         => ifempty($currency_id, $order['currency']),
+             'discount'         => $order['discount'],
+             'tax'              => $order['tax'],
+             'payment_name'     => ifset($order['params']['payment_name'], ''),
+             'billing_address'  => $billing_address,
+             'shipping'         => $order['shipping'],
+             'shipping_name'    => ifset($order['params']['shipping_name'], ''),
+             'shipping_address' => $shipping_address,
+             'items'            => $items,
+             'comment'          => ifempty($order['comment'], ''),
+             'params'           => $order['params'],
+          );
+        return waOrder::factory($order_data);
+    }
 
     /**
      * Плагин принимает номера телефонов только в формате 7хххххххххх
@@ -536,19 +506,19 @@ HTML
      * Валидатор проверяет номер телефона на соответствие формату и заменяет код страны
      * на 7 в соответствии с форматом, который принимает плагин
      */
-    private function validatePhone($phone) {
-        if(preg_match(self::PHONE_REGEXP, $phone, $matches)) {
-            return "7" . $matches[2];
-        } else {
-            return null;
-        }
-    }
+     private function validatePhone($phone) {
+         if (preg_match(self::PHONE_REGEXP, $phone, $matches)) {
+             return "7".$matches[2];
+         } else {
+             return null;
+         }
+     }
 
     /**
      * Плагин ругается, если email не соответствует формату и не принимает чек, что недопустимо.
      */
     private function validateEmail($email) {
-        if(filter_var($email, FILTER_VALIDATE_EMAIL)) {
+        if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return $email;
         } else {
             return null;
@@ -560,30 +530,28 @@ HTML
         switch ($error_type) {
             case self::REQUIRED_URL_ERROR:
                 $message = "Отстутствуют необходимые реквизиты: API URL";
-                if($this->komtet_log) {
+                if ($this->komtet_log) {
                     $this->writeLog($message);
                 }
-                if($this->komtet_alert) {
+                if ($this->komtet_alert) {
                     $this->emailNotification($subj, $message);
                 }
                 break;
-
             case self::REQUIRED_PROPERTY_ERROR:
                 $message = "Отстутствуют необходимые реквизиты: Идентификатор магазина, Секретный ключ магазина или " .
                     "Идентификатор очереди";
-                if($this->komtet_log) {
+                if ($this->komtet_log) {
                     $this->writeLog($message);
                 }
-                if($this->komtet_alert) {
+                if ($this->komtet_alert) {
                     $this->emailNotification($subj, $message);
                 }
                 break;
-
             case self::KOMTET_ERROR:
-                if($this->komtet_log) {
+                if ($this->komtet_log) {
                     $this->writeLog($data);
                 }
-                if($this->komtet_alert) {
+                if ($this->komtet_alert) {
                     $this->emailNotification("Ошибка в системе КОМТЕТ Касса", print_r($data, true));
                 }
                 break;
@@ -591,7 +559,7 @@ HTML
     }
 
     public function writeLog($message) {
-        if(is_string($message)) {
+        if (is_string($message)) {
             waLog::log($message, self::LOG_FILE_NAME);
         } else {
             waLog::dump($message, self::LOG_FILE_NAME);
@@ -599,7 +567,7 @@ HTML
     }
 
     private function emailNotification($subj, $message) {
-        if($this->main_shop_email && $this->komtet_alert_email) {
+        if ($this->main_shop_email && $this->komtet_alert_email) {
             $mail_message = new waMailMessage($subj, $message, 'text/plain');
             // Указываем отправителя
             $mail_message->setFrom($this->main_shop_email);
@@ -608,10 +576,10 @@ HTML
             // Отправка письма
             $mail_message->send();
         } else {
-            if(!$this->main_shop_email) {
+            if (!$this->main_shop_email) {
                 $this->writeLog("Некорректный основной email-адрес магазина, проверьте настройки");
             }
-            if(!$this->komtet_alert_email) {
+            if (!$this->komtet_alert_email) {
                 $this->writeLog("Некорректный email для уведомлений");
             }
         }
