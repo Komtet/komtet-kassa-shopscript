@@ -20,7 +20,6 @@ class shopKomtetkassaPlugin extends shopPlugin {
     const REQUIRED_URL_ERROR = 1;
     const KOMTET_ERROR = 2;
     const INT_MULTIPLICATOR = 100;
-
     const ACTION_ID = 'fiscalise_internal_action';
 
     private $komtet_complete_action;
@@ -38,7 +37,6 @@ class shopKomtetkassaPlugin extends shopPlugin {
 
     private function init() {
         $this->komtet_log = (bool) $this->getSettings('komtet_log');
-
         $this->komtet_complete_action = (bool) $this->getSettings('komtet_complete_action');
         $this->komtet_api_url = filter_var($this->getSettings('komtet_api_url'), FILTER_VALIDATE_URL);
         $this->komtet_shop_id = $this->getSettings('komtet_shop_id');
@@ -49,7 +47,6 @@ class shopKomtetkassaPlugin extends shopPlugin {
         $this->komtet_payment_types = $this->getSettings('komtet_payment_types');
         $this->komtet_delivery_tax = $this->getSettings('komtet_delivery_tax');
         $this->komtet_alert = (bool) $this->getSettings('komtet_alert');
-
         $this->main_shop_email = $this->validateEmail(wa('shop')->getConfig()->getGeneralSettings('email'));
         $this->komtet_alert_email = $this->validateEmail($this->getSettings('komtet_alert_email'));
 
@@ -58,18 +55,14 @@ class shopKomtetkassaPlugin extends shopPlugin {
         }
 
     }
-
-    /**
-     * Необходимо для совместимости интерфейса при вызове shopPayment::getOrderData
-     */
+	
+    //Необходимо для совместимости интерфейса при вызове shopPayment::getOrderData
     public function allowedCurrency() {
         return array('RUB');
     }
-
     public function getActionId() {
         return self::ACTION_ID;
     }
-
     public function getCallbackUrl($absolute = true, $path) {
         $routing = wa()->getRouting();
 
@@ -79,16 +72,16 @@ class shopKomtetkassaPlugin extends shopPlugin {
         );
         return $routing->getUrl('shop/frontend/', $route_params, $absolute);
     }
-
-    public function fiscalize($params) {
+    // создание запроса  на фискализацию чека
+    public function fiscalize($params) { 
         $this->processReceipt($params, 'payment');
     }
-
-    public function refund($params) {
+    // создание запроса на возврат чека	
+    public function refund($params) { 
          $this->processReceipt($params, 'refund');
     }
-
-    public function backend_orders($params) {
+    // проверяет статус заказа и отображает в админке  "Фискализирован"	
+    public function backend_orders($params) { 
         return array(
             'sidebar_bottom_li' => <<<HTML
             <script type="text/javascript">
@@ -151,10 +144,9 @@ class shopKomtetkassaPlugin extends shopPlugin {
      );
     }
 
+    // формирование запроса	
     private function processReceipt($params, $operation = 'payment') {
-
         $this->init();
-
         if ($params['action_id'] == 'complete' && !$this->komtet_complete_action) {
             return;
         }
@@ -170,11 +162,11 @@ class shopKomtetkassaPlugin extends shopPlugin {
         $order_id = $params['order_id'];
         $order = $this->getOrderData($order_id, $this); 
         $payment_id = $order->params['payment_id'];
-
+           
         if ($operation == 'payment' && $order['fiscalised']) {
             $this->writeLog("Order $order_id already fiscalised");
             return;
-        }
+        } 
         if (!isset($this->komtet_payment_types[$payment_id])) {
             return;
         }
@@ -190,8 +182,8 @@ class shopKomtetkassaPlugin extends shopPlugin {
             $this->writeLog($order->items);
         }
 
-	    // В случае использования на сервере кирилической локали, например ru_RU.UTF-8,
-	    // возникает проблема с форматированием json
+	// В случае использования на сервере кирилической локали, например ru_RU.UTF-8,
+	// возникает проблема с форматированием json
         $cur_local = setlocale(LC_NUMERIC, 0);
         $local_changed = false;
         if ($cur_local != "en_US.UTF-8") {
@@ -227,15 +219,14 @@ class shopKomtetkassaPlugin extends shopPlugin {
             ? ($this->komtet_payment_types[$payment_id]['fisc_receipt_type'] == 'print_email' ? true : false)
             : true;
 
-	$check->setShouldPrint($print_check); 
-        
+	$check->setShouldPrint($print_check); // печать чека на ккт
         $countPositions = count($order->items); // кол-во элементов в массиве
         $loopCounter = 0; // счетчик цикла
         $lastItemLoop = false; // bool последний элемент массива
         $usedDiscountSumm = 0; // сумма примененной скидки  
 
         foreach ($order->items as $item) { 
-            $loopCounter++; 
+            $loopCounter++; 	
             if (!isset($item['tax_included']) || $item['tax_included'] == 0) {
                 $vat = new Vat(Vat::RATE_NO);
             } else {
@@ -246,12 +237,16 @@ class shopKomtetkassaPlugin extends shopPlugin {
                         $vat = new Vat(Vat::RATE_NO);
                     }
             } 
-            if ($order->discount>0) { // если есть скидка  
-                if ($loopCounter == $countPositions){ // проверка на последний элемент массива
+            // со скидкой	
+            if ($order->discount>0) { 
+                // проверка на последний элемент массива    
+                if ($loopCounter == $countPositions){ 
                     $lastItemLoop = true;
-                } 
-                $total = $this->CountTotalPosition($item, $order, $lastItemLoop, $usedDiscountSumm); 
-            } else { // без скидки
+                }    
+                $total = $this->сountTotalPosition($item, $order, $lastItemLoop, $usedDiscountSumm); 
+            }
+            // без скидки		
+            else { 
                 $total = round($item['price'] * $item['quantity'], 2);
             }  
 
@@ -264,7 +259,7 @@ class shopKomtetkassaPlugin extends shopPlugin {
                 $vat);
             $check->addPosition($position); 
         }
-
+        // наличие доставки	    
         if (intval($order['shipping']) > 0) {
             try {
 		    $vat = new Vat($this->komtet_delivery_tax);
@@ -322,33 +317,31 @@ class shopKomtetkassaPlugin extends shopPlugin {
             $this->pluginError(self::KOMTET_ERROR, $result);
         }
     }
-
-    private function CountTotalPosition($item, $order, $lastItemLoop, &$usedDiscountSumm) // подсчет суммы за позицию в чеке с учетом скидки
+    // подсчет суммы за позицию в чеке с учетом скидки
+    private function сountTotalPosition($item, $order, $lastItemLoop, &$usedDiscountSumm) 
     { 
         $discount_total = $order->discount; // скидка на весь чек
         $shipping_total = $order->shipping; // цена за доставку
         $summ_total = $order->total; // общая сумма за чек
-
-        if ($lastItemLoop == false) {
-            $currentDiscount = $item['quantity'] * round(($item['price'] * ($discount_total / (($summ_total - $shipping_total) + $discount_total))), 2); 		
-            $total = $item['price'] * $item['quantity'] - $currentDiscount;
+        // если не последняя позиция в чеке
+        if ($lastItemLoop == false) {              		
+            $currentDiscount = $item['quantity'] * round(($item['price'] * ($discount_total / (($summ_total - $shipping_total) + $discount_total))), 2);	
+            $total = $item['price'] * $item['quantity'] - $currentDiscount;		
             $usedDiscountSumm += $currentDiscount; 
         } else {
             $total = $item['price']*$item['quantity'] - ($discount_total - $usedDiscountSumm); 
         } 
         return $total;
     }
-
+    // изменяем статус заказа 
     public function setOrderStatus($order_id, $status) {
         $order_model = new shopOrderModel();
         $order_model->exec("UPDATE `shop_order` SET fiscalised = i:fiscalised WHERE id = i:order_id", 
             array('fiscalised' => $status, 'order_id' => $order_id));
     }
 
-         /**
-         * Копия из shopPayment::getOrderData для расширения интерфейса: необходимо добавить используемый
-         * флаг статуса фискализации
-         */
+    //Копия из shopPayment::getOrderData для расширения интерфейса: необходимо добавить используемый
+    //флаг статуса фискализации
     private static function getOrderData($order, $payment_plugin = null) {
         if (!is_array($order)) {
             $order_id = shopHelper::decodeOrderId($encoded_order_id = $order);
@@ -364,15 +357,14 @@ class shopKomtetkassaPlugin extends shopPlugin {
             }
             $order['id_str'] = $encoded_order_id;
         }
-
         if (!isset($order['id_str'])) {
             $order['id_str'] = shopHelper::encodeOrderId($order['id']);
         }
-
         if (!isset($order['params'])) {
             $order_params_model = new shopOrderParamsModel();
             $order['params'] = $order_params_model->get($order['id']);
         }
+	    
         $convert = false;
         if ($payment_plugin && is_object($payment_plugin) && (method_exists($payment_plugin, 'allowedCurrency'))) {
             $allowed_currencies = $payment_plugin->allowedCurrency();
@@ -493,7 +485,7 @@ class shopKomtetkassaPlugin extends shopPlugin {
         return waOrder::factory($order_data);
     }
 
-    /**
+     /**
      * Плагин принимает номера телефонов только в формате 7хххххххххх
      * и ругается, если номер не соответствует формату и, соответственно, не принимает чек,
      * что недопустимо.
@@ -513,10 +505,8 @@ class shopKomtetkassaPlugin extends shopPlugin {
              return null;
          }
      }
-
-    /**
-     * Плагин ругается, если email не соответствует формату и не принимает чек, что недопустимо.
-     */
+ 
+    //Плагин ругается, если email не соответствует формату и не принимает чек, что недопустимо. 
     private function validateEmail($email) {
         if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return $email;
@@ -524,7 +514,7 @@ class shopKomtetkassaPlugin extends shopPlugin {
             return null;
         }
     }
-
+    //добавление в файл лог записи ошибок в зависимости от $error_type
     public function pluginError($error_type, $data = null) {
         $subj = "Ошибка плагина";
         switch ($error_type) {
@@ -557,7 +547,7 @@ class shopKomtetkassaPlugin extends shopPlugin {
                 break;
         }
     }
-
+    //добавление в файл лог записи
     public function writeLog($message) {
         if (is_string($message)) {
             waLog::log($message, self::LOG_FILE_NAME);
@@ -565,7 +555,7 @@ class shopKomtetkassaPlugin extends shopPlugin {
             waLog::dump($message, self::LOG_FILE_NAME);
         }
     }
-
+    //уведомление на почту
     private function emailNotification($subj, $message) {
         if ($this->main_shop_email && $this->komtet_alert_email) {
             $mail_message = new waMailMessage($subj, $message, 'text/plain');
