@@ -4,44 +4,42 @@ use Komtet\KassaSdk\Vat;
 
 class shopKomtetkassa {
 
-	const PLUGIN_ID = 'komtetkassa';
+    const PLUGIN_ID = 'komtetkassa';
 
-	public static function taxTypesValues() {
+    public static function taxTypesValues() {
 
-		$data = array(
-	        array(
-                'value' => 0,
-                'title' => 'ОСН',
+    $data = array(
+        array(
+            'value' => 0,
+            'title' => 'ОСН',
             ),
-            array(
-                'value' => 1,
-                'title' => 'УСН доход',
+        array(
+            'value' => 1,
+            'title' => 'УСН доход',
             ),
-            array(
-                'value' => 2,
-                'title' => 'УСН доход - расход',
+        array(
+            'value' => 2,
+            'title' => 'УСН доход - расход',
             ),
-            array(
-                'value' => 3,
-                'title' => 'ЕНВД',
+        array(
+            'value' => 3,
+            'title' => 'ЕНВД',
             ),
-            array(
-                'value' => 4,
-                'title' => 'ЕСН',
+        array(
+            'value' => 4,
+            'title' => 'ЕСН',
             ),
-            array(
-                'value' => 5,
-                'title' => 'Патент',
+        array(
+            'value' => 5,
+            'title' => 'Патент',
             )
 	    );
-	    return $data;
+        return $data;
+    }
 
-	}
-
-	public static function vatValues() {
-
-		$data = array(
-	        array(
+    public static function vatValues() {
+        $data = array(
+            array(
                 'value' => Vat::RATE_NO,
                 'title' => 'Без НДС',
             ),
@@ -65,39 +63,32 @@ class shopKomtetkassa {
                 'value' => Vat::RATE_118,
                 'title' => 'НДС 18/118',
             )
-	    );
-	    return $data;
+	);
+        return $data;
+    }
 
-	}
-
-	public static function getPaymentTypes() {
-
+    public static function getPaymentTypes() {
         $plugin_id = self::PLUGIN_ID;
         $settings_name = 'komtet_payment_types';
-
         $spm = new shopPluginModel();
         $methods = $spm->listPlugins('payment');
-
-        $plugin = waSystem::getInstance()->getPlugin($plugin_id, true);
+        $plugin = waSystem::getInstance()->getPlugin($plugin_id, true);	    
         $namespace = wa()->getApp().'_'.$plugin_id;
-
         $settings = $plugin->getSettings($settings_name);
         $def_ns = $plugin->getSettings("komtet_tax_type");
 
         $row_tpl = '<tr><td>%s</td><td>%s</td><td>%s</td><td>%s</td></tr>';
-
         $controls = <<<HTML
-<table class="zebra">
-    <tr>
-        <th>Способ оплаты</th>
-        <th>Средство платежа</th>
-        <th>Чек</th>
-        <th>Система налогообложения</th>
-    </tr>
-HTML;
+            <table class="zebra">
+                <tr>
+                    <th>Способ оплаты</th>
+                    <th>Средство платежа</th>
+                    <th>Чек</th>
+                    <th>Система налогообложения</th>
+                </tr>
+        HTML;
 
         foreach($methods as $k => $v) {
-
             $params = array(
                 'namespace' => $namespace,
                 'title_wrapper' => '&nbsp;%s',
@@ -121,7 +112,6 @@ HTML;
             );
 
             $selected_type = isset($settings[$v['id']]) ? $settings[$v['id']]['fisc_payment_type'] : 'card';
-
             $payment_method = waHtmlControl::getControl(
                 waHtmlControl::SELECT,
                 'fisc_payment_type',
@@ -144,7 +134,6 @@ HTML;
             );
 
             $selected_receipt_type = isset($settings[$v['id']]) ? $settings[$v['id']]['fisc_receipt_type'] : 'print_email';
-
             $receipt_type = waHtmlControl::getControl(
                 waHtmlControl::SELECT,
                 'fisc_receipt_type',
@@ -167,7 +156,6 @@ HTML;
             );
 
             $selected_tax_type = isset($settings[$v['id']]) ? $settings[$v['id']]['tax_type'] : $def_ns;
-
             $tax_type = waHtmlControl::getControl(
                 waHtmlControl::SELECT,
                 'tax_type',
@@ -185,38 +173,33 @@ HTML;
 
         $controls .= "</table><script type='text/javascript'>";
         $controls .= <<<JS
-$(function() {
-    var enable_disable_select = function() {
-        var _t = $(this);
-        _t.parents('tr').find('select')
-            .prop('disabled', !_t.is(':checked'));
-    }
-    $('input[type="checkbox"].komtet_payment_types_class')
-        .on('change', enable_disable_select)
-        .each(enable_disable_select)
-});
-JS;
+            $(function() {
+                var enable_disable_select = function() {
+                var _t = $(this);
+                _t.parents('tr').find('select')
+                .prop('disabled', !_t.is(':checked'));
+            }
+            $('input[type="checkbox"].komtet_payment_types_class')
+                .on('change', enable_disable_select)
+                .each(enable_disable_select)
+            });
+            JS;
         $controls .= '</script>';
-
         return $controls;
-
     }
 
-	public function getSuccessUrl() {
-
-		$plugin_id = self::PLUGIN_ID;
-		$settings_name = 'komtet_success_url';
-		$plugin = waSystem::getInstance()->getPlugin($plugin_id, true);
+    public function getSuccessUrl() {
+        $plugin_id = self::PLUGIN_ID;
+        $settings_name = 'komtet_success_url';
+        $plugin = waSystem::getInstance()->getPlugin($plugin_id, true);
         $namespace = wa()->getApp().'_'.$plugin_id;
-
-		$params = array(
+        $params = array(
             'namespace' => $namespace,
             'title_wrapper' => '&nbsp;%s',
             'description_wrapper' => '<span class="hint">%s</span>',
             'control_wrapper' => '%2$s'."\n".'%1$s'."\n".'%3$s'."\n",
         );
-
-		$success_url = waHtmlControl::getControl(
+        $success_url = waHtmlControl::getControl(
             waHtmlControl::INPUT,
             'success_url',
             array_merge(
@@ -226,26 +209,21 @@ JS;
                 )
             )
         );
+        return $success_url;
+     }
 
-		return $success_url;
-
-	}
-
-	public function getFailureUrl() {
-
-		$plugin_id = self::PLUGIN_ID;
-		$settings_name = 'komtet_failure_url';
-		$plugin = waSystem::getInstance()->getPlugin($plugin_id, true);
-        $namespace = wa()->getApp().'_'.$plugin_id;
-
-		$params = array(
+     public function getFailureUrl() {
+         $plugin_id = self::PLUGIN_ID;
+         $settings_name = 'komtet_failure_url';
+         $plugin = waSystem::getInstance()->getPlugin($plugin_id, true);
+         $namespace = wa()->getApp().'_'.$plugin_id;
+         $params = array(
             'namespace' => $namespace,
             'title_wrapper' => '&nbsp;%s',
             'description_wrapper' => '<span class="hint">%s</span>',
             'control_wrapper' => '%2$s'."\n".'%1$s'."\n".'%3$s'."\n",
         );
-
-		$failure_url = waHtmlControl::getControl(
+        $failure_url = waHtmlControl::getControl(
             waHtmlControl::INPUT,
             'failure_url',
             array_merge(
@@ -256,7 +234,7 @@ JS;
             )
         );
 
-		return $failure_url;
+        return $failure_url;
 	}
 
 }
