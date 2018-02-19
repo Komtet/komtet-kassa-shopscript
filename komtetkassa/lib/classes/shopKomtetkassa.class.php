@@ -183,7 +183,7 @@ HTML;
                 .on('change', enable_disable_select)
                 .each(enable_disable_select)
             });
-            JS;
+JS;
         $controls .= '</script>';
         return $controls;
     }
