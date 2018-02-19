@@ -140,7 +140,7 @@ class shopKomtetkassaPlugin extends shopPlugin {
          });
      });
      </script>
-     HTML
+HTML
      );
     }
 
