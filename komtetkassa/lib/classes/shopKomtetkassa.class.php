@@ -86,7 +86,7 @@ class shopKomtetkassa {
                     <th>Чек</th>
                     <th>Система налогообложения</th>
                 </tr>
-        HTML;
+HTML;
 
         foreach($methods as $k => $v) {
             $params = array(
