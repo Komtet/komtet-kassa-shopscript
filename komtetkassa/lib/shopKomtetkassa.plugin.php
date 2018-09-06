@@ -247,14 +247,14 @@ HTML
             }
             // без скидки		
             else { 
-                $total = round($item['price'] * $item['quantity'], 2);
+                $total = $item['price'] * $item['quantity'];
             }  
 
             $position = new Position(
                 html_entity_decode($item['name'] . ($item['sku'] != '' ? ", " . $item['sku'] : '')),
                 round($item['price'], 2),
                 intval($item['quantity']),
-                $total,
+                round($total, 2),
                 round($item['total_discount'], 2),
                 $vat);
             $check->addPosition($position); 
