@@ -227,16 +227,33 @@ HTML
 
         foreach ($order->items as $item) { 
             $loopCounter++; 	
-            if (!isset($item['tax_included']) || $item['tax_included'] == 0) {
+		
+	    $product = new shopProduct($item['product_id']);   
+            if($product['tax_id']>0)
+            { 
+                $sql_one = 'SELECT tax_value FROM shop_tax_regions where tax_id = '.$product['tax_id'].' ;';
+                $model_one = new waModel();
+                $data_one = $model_one->query($sql_one)->fetchAll();
+                
+                switch (intval($data_one[0]['tax_value'])) {
+                case 0:
+                    $vat = new Vat(Vat::RATE_0);
+                    break;
+                case 10:
+                $vat = new Vat(Vat::RATE_10);
+                    break;
+                case 18:
+                $vat = new Vat(Vat::RATE_18);
+                    break;
+                }                
+            }
+            else
+            {
                 $vat = new Vat(Vat::RATE_NO);
-            } else {
-                try {
-		    $vat = new Vat($item['tax_percent']);
-	            } catch (SdkException $e) {
-                        $this->writeLog($e);
-                        $vat = new Vat(Vat::RATE_NO);
-                    }
-            } 
+            }
+		
+		
+		
             // со скидкой	
             if ($order->discount>0) { 
                 // проверка на последний элемент массива    
