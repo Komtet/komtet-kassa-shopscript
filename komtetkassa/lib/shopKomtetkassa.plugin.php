@@ -55,7 +55,7 @@ class shopKomtetkassaPlugin extends shopPlugin {
         }
 
     }
-	
+
     //Необходимо для совместимости интерфейса при вызове shopPayment::getOrderData
     public function allowedCurrency() {
         return array('RUB');
@@ -73,78 +73,15 @@ class shopKomtetkassaPlugin extends shopPlugin {
         return $routing->getUrl('shop/frontend/', $route_params, $absolute);
     }
     // создание запроса  на фискализацию чека
-    public function fiscalize($params) { 
+    public function fiscalize($params) {
         $this->processReceipt($params, 'payment');
     }
-    // создание запроса на возврат чека	
-    public function refund($params) { 
+    // создание запроса на возврат чека
+    public function refund($params) {
          $this->processReceipt($params, 'refund');
     }
-    // проверяет статус заказа и отображает в админке  "Фискализирован"	
-    public function backend_orders($params) { 
-        return array(
-            'sidebar_bottom_li' => <<<HTML
-            <script type="text/javascript">
-                jQuery(function() {
-                    "use strict";
-                     var $ = jQuery,
-                     already_called = false,
-                     block_event = false;
-                     var fn = function() {
-                     if ($('#s-orders-views .selected').data('view') !== 'split') {
-                         return;
-                     }
-                     var orders = [];
-                     $("#order-list").find("li.order").each(function() {
-                         orders.push($(this).data("order-id"));
-                     });
-                     $.ajax({
-                         url: "?plugin=komtetkassa&action=getorders",
-                         data: {orders: orders},
-                         dataType: 'json',
-                         method: "POST",
-                         success: function(data) 
-			 {
-                             if (data['status'] == 'ok') 
-			     {
-                	         block_event = true;
-                                 $("#order-list").find("li.order").each(function() {
-                                     var _t = $(this),
-                                     order_id = _t.data("order-id"),
-                                     order; 
-                                     if (data.data[order_id]) 
-				     {
-                        	         order = _t.find("div.details");
-                        	         if (!order.hasClass('fiscalised')) 
-					 {
-                            	             order.addClass('fiscalised')
-                            	             .append("<p class='hint' style='color: green;'>Фискализирован</p>")
-                                         }
-                                     }
-                                 });
-                                 block_event = false;
-                             } else {
-                                 $.shop.trace('komtetkassa.getorders', data);
-                             }
-                         }
-                     });
-                 already_called = false;
-	     }
-	     $("#s-content").on("DOMSubtreeModified", "#order-list", function(e) {
-             if(already_called) {
-                 clearTimeout(already_called);
-             }
-             if(!block_event) {
-                 already_called = setTimeout(fn, 300);
-             }
-         });
-     });
-     </script>
-HTML
-     );
-    }
 
-    // формирование запроса	
+    // формирование запроса
     private function processReceipt($params, $operation = 'payment') {
         $this->init();
         if ($params['action_id'] == 'complete' && !$this->komtet_complete_action) {
@@ -160,13 +97,13 @@ HTML
         }
 
         $order_id = $params['order_id'];
-        $order = $this->getOrderData($order_id, $this); 
+        $order = $this->getOrderData($order_id, $this);
         $payment_id = $order->params['payment_id'];
-           
+
         if ($operation == 'payment' && $order['fiscalised']) {
             $this->writeLog("Order $order_id already fiscalised");
             return;
-        } 
+        }
         if (!isset($this->komtet_payment_types[$payment_id])) {
             return;
         }
@@ -194,7 +131,7 @@ HTML
 	$user = $this->komtet_alert_email;
         $customer_email = $order->getContactField('email', 'default');
         $customer_phone = $order->getContactField('phone', 'default');
-        
+
 	if (ifset($customer_email)) {
             $user = $customer_email;
         } else {
@@ -219,64 +156,44 @@ HTML
             ? ($this->komtet_payment_types[$payment_id]['fisc_receipt_type'] == 'print_email' ? true : false)
             : true;
 
+
 	$check->setShouldPrint($print_check); // печать чека на ккт
         $countPositions = count($order->items); // кол-во элементов в массиве
         $loopCounter = 0; // счетчик цикла
         $lastItemLoop = false; // bool последний элемент массива
-        $usedDiscountSumm = 0; // сумма примененной скидки  
+        $usedDiscountSumm = 0; // сумма примененной скидки
 
-        foreach ($order->items as $item) { 
-            $loopCounter++; 	
-		
-	    $product = new shopProduct($item['product_id']);   
-            if($product['tax_id']>0)
-            { 
+        foreach ($order->items as $item) {
+            $loopCounter++;
+
+            $product = new shopProduct($item['product_id']);
+
+            if($product['tax_id'] > 0) {
                 $sql_one = 'SELECT tax_value FROM shop_tax_regions where tax_id = '.$product['tax_id'].' ;';
                 $model_one = new waModel();
                 $data_one = $model_one->query($sql_one)->fetchAll();
-                
-                switch (intval($data_one[0]['tax_value'])) {
-                case 0:
-                    $vat = new Vat(Vat::RATE_0);
-                    break;
-                case 10:
-                $vat = new Vat(Vat::RATE_10);
-                    break;
-                case 18:
-                $vat = new Vat(Vat::RATE_18);
-                    break;
-                }                
-            }
-            else
-            {
+
+                $vat = new Vat(intval($data_one[0]['tax_value']));
+            } else {
                 $vat = new Vat(Vat::RATE_NO);
             }
-		
-		
-		
-            // со скидкой	
-            if ($order->discount>0) { 
-                // проверка на последний элемент массива    
-                if ($loopCounter == $countPositions){ 
-                    $lastItemLoop = true;
-                }    
-                $total = $this->сountTotalPosition($item, $order, $lastItemLoop, $usedDiscountSumm); 
-            }
-            // без скидки		
-            else { 
-                $total = $item['price'] * $item['quantity'];
-            }  
 
             $position = new Position(
                 html_entity_decode($item['name'] . ($item['sku'] != '' ? ", " . $item['sku'] : '')),
                 round($item['price'], 2),
-                intval($item['quantity']),
-                round($total, 2),
-                round($item['total_discount'], 2),
+                round(floatval($item['quantity']), 2),
+                round($item['price'] * $item['quantity'], 2),
+                0,
                 $vat);
-            $check->addPosition($position); 
+
+            $check->addPosition($position);
         }
-        // наличие доставки	    
+
+        if ($order->discount > 0) {
+            $check->applyDiscount(round(floatval($order->discount), 2));
+        }
+
+        // наличие доставки
         if (intval($order['shipping']) > 0) {
             try {
 		    $vat = new Vat($this->komtet_delivery_tax);
@@ -302,13 +219,12 @@ HTML
             ? $this->komtet_payment_types[$payment_id]['fisc_payment_type']
             : 'card';
 
-        if ($payment_type == 'card') {
-            $payment = Payment::createCard(round($order->total, 2)); // или createCash при оплате наличными
-        } else {
-            $payment = Payment::createCash(round($order->total, 2)); // или createCash при оплате наличными
-        }
-	    
+        $payment = new Payment($payment_type == 'card' ?
+                               Payment::TYPE_CARD :
+                               Payment::TYPE_CASH, round($order->total, 2));
+
         $check->addPayment($payment);
+
         if ($this->komtet_log) {
             $this->writeLog($check->asArray());
         }
@@ -320,9 +236,11 @@ HTML
         } catch (SdkException $e) {
             $this->pluginError(self::KOMTET_ERROR, $e);
         }
+
         if ($local_changed) {
             setlocale(LC_NUMERIC, $cur_local);
         }
+
         if ($result) {
             $this->setOrderStatus($order_id, 2);
             if ($operation == 'payment') {
@@ -333,27 +251,13 @@ HTML
         } else {
             $this->pluginError(self::KOMTET_ERROR, $result);
         }
+
     }
-    // подсчет суммы за позицию в чеке с учетом скидки
-    private function сountTotalPosition($item, $order, $lastItemLoop, &$usedDiscountSumm) 
-    { 
-        $discount_total = $order->discount; // скидка на весь чек
-        $shipping_total = $order->shipping; // цена за доставку
-        $summ_total = $order->total; // общая сумма за чек
-        // если не последняя позиция в чеке
-        if ($lastItemLoop == false) {              		
-            $currentDiscount = $item['quantity'] * round(($item['price'] * ($discount_total / (($summ_total - $shipping_total) + $discount_total))), 2);	
-            $total = $item['price'] * $item['quantity'] - $currentDiscount;		
-            $usedDiscountSumm += $currentDiscount; 
-        } else {
-            $total = $item['price']*$item['quantity'] - ($discount_total - $usedDiscountSumm); 
-        } 
-        return $total;
-    }
-    // изменяем статус заказа 
+
+    // изменяем статус заказа
     public function setOrderStatus($order_id, $status) {
         $order_model = new shopOrderModel();
-        $order_model->exec("UPDATE `shop_order` SET fiscalised = i:fiscalised WHERE id = i:order_id", 
+        $order_model->exec("UPDATE `shop_order` SET fiscalised = i:fiscalised WHERE id = i:order_id",
             array('fiscalised' => $status, 'order_id' => $order_id));
     }
 
@@ -381,7 +285,7 @@ HTML
             $order_params_model = new shopOrderParamsModel();
             $order['params'] = $order_params_model->get($order['id']);
         }
-	    
+
         $convert = false;
         if ($payment_plugin && is_object($payment_plugin) && (method_exists($payment_plugin, 'allowedCurrency'))) {
             $allowed_currencies = $payment_plugin->allowedCurrency();
@@ -522,8 +426,8 @@ HTML
              return null;
          }
      }
- 
-    //Плагин ругается, если email не соответствует формату и не принимает чек, что недопустимо. 
+
+    //Плагин ругается, если email не соответствует формату и не принимает чек, что недопустимо.
     private function validateEmail($email) {
         if (filter_var($email, FILTER_VALIDATE_EMAIL)) {
             return $email;
