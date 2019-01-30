@@ -185,6 +185,7 @@ class shopKomtetkassaPlugin extends shopPlugin {
                 round($item['price'] * $item['quantity'], 2),
                 0,
                 $vat);
+            $position->setId($item['sku'] ?: $item['product_id']);
 
             $check->addPosition($position);
         }

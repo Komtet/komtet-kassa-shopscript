@@ -9,7 +9,7 @@ services:
       MYSQL_USER: devuser
       MYSQL_PASSWORD: devpass
     volumes:
-      - /srv/docker_volumes/mysql_data/komtet_kassa_shopscript:/var/lib/mysql
+      - ./data/mysql:/var/lib/mysql
     ports:
       - "9906:3306"
   web:
