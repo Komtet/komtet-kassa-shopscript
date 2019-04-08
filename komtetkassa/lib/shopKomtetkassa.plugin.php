@@ -182,7 +182,7 @@ class shopKomtetkassaPlugin extends shopPlugin {
                 html_entity_decode($item['name'] . ($item['sku'] != '' ? ", " . $item['sku'] : '')),
                 round($item['price'], 2),
                 round(floatval($item['quantity']), 2),
-                round($item['price'] * $item['quantity'], 2),
+                round($item['price'] * $item['quantity'] - $item['total_discount'], 2),
                 0,
                 $vat);
             $position->setId($item['sku'] ?: $item['product_id']);
