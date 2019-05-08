@@ -65,6 +65,15 @@ return array(
         'control_type' => waHtmlControl::CHECKBOX,
     ),
 
+    'komtet_use_item_discount'  => array(
+        'title'        => "Учитывать скидки в позициях",
+        'description'  => array(
+            "Включить если используются сторонние плагины, применяющие скидки к позициям, а не ко всему чеку."
+        ),
+        'value'        => 0, // значение по умолчанию
+        'control_type' => waHtmlControl::CHECKBOX,
+    ),
+
     'komtet_delivery_tax'  => array(
         'title'        => "Ставка налога услуги \"Доставка\"",
         'value'        => 'no', // значение по умолчанию
