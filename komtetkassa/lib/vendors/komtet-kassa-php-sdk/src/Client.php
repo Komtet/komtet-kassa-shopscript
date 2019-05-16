@@ -86,6 +86,10 @@ class Client
         if ($data === null) {
             $method = 'GET';
         } elseif (is_array($data)) {
+            // Принудительно выставляем serialize_precision для корректной сериализации float
+            if (version_compare(phpversion(), '7.1', '>=')) {
+                ini_set( 'serialize_precision', 10 );
+            }
             $method = 'POST';
             $data = json_encode($data);
         } else {

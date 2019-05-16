@@ -1,2 +1,4 @@
 docker_env/php**
 docker_env/data**
+docker_env_7.2/php**
+docker_env_7.2/data**
