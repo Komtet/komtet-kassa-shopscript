@@ -16,15 +16,15 @@ start_web7: stop  ## Запустить контейнер
 	@docker-compose up -d web7
 
 update:  ## Установить/Обновить модуль
-	@rm -rf php/wa-apps/shop/plugins/komtetdelivery &&\
-	 cp -r komtetdelivery php/wa-apps/shop/plugins
+	@rm -rf php/wa-apps/shop/plugins/komtetkassa &&\
+	 cp -r komtetkassa php/wa-apps/shop/plugins
 
 release:  ## Архивировать для загрузки в маркет
 	@tar\
-	 --exclude='./komtetdelivery/lib/vendors/komtet-kassa-php-sdk/.*'\
-	 --exclude='./komtetdelivery/lib/vendors/komtet-kassa-php-sdk/docker_env'\
-	 --exclude='./komtetdelivery/lib/vendors/komtet-kassa-php-sdk/tests'\
-	 -czvf komtetdelivery.tar.gz komtetdelivery/
+	 --exclude='./komtetkassa/lib/vendors/komtet-kassa-php-sdk/.*'\
+	 --exclude='./komtetkassa/lib/vendors/komtet-kassa-php-sdk/docker_env'\
+	 --exclude='./komtetkassa/lib/vendors/komtet-kassa-php-sdk/tests'\
+	 -czvf komtetkassa.tar.gz komtetkassa/
 
 .PHONY: help
 .DEFAULT_GOAL := help

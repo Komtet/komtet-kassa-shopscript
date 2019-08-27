@@ -24,7 +24,6 @@ class shopKomtetkassaPlugin extends shopPlugin {
 
     private $komtet_complete_action;
     private $komtet_use_item_discount;
-    private $komtet_api_url;
     private $komtet_shop_id;
     private $komtet_secret_key;
     private $komtet_print_check;
@@ -40,7 +39,6 @@ class shopKomtetkassaPlugin extends shopPlugin {
         $this->komtet_log = (bool) $this->getSettings('komtet_log');
         $this->komtet_complete_action = (bool) $this->getSettings('komtet_complete_action');
         $this->komtet_use_item_discount = (bool) $this->getSettings('komtet_use_item_discount');
-        $this->komtet_api_url = filter_var($this->getSettings('komtet_api_url'), FILTER_VALIDATE_URL);
         $this->komtet_shop_id = $this->getSettings('komtet_shop_id');
         $this->komtet_secret_key = $this->getSettings('komtet_secret_key');
         $this->komtet_print_check = (bool) $this->getSettings('komtet_print_check');
@@ -89,10 +87,6 @@ class shopKomtetkassaPlugin extends shopPlugin {
         if ($params['action_id'] == 'complete' && !$this->komtet_complete_action) {
             return;
         }
-        if (!$this->komtet_api_url) {
-            $this->pluginError(self::REQUIRED_URL_ERROR);
-            return false;
-        }
         if (!$this->komtet_shop_id || !$this->komtet_secret_key || !$this->komtet_queue_id) {
             $this->pluginError(self::REQUIRED_PROPERTY_ERROR);
             return false;
@@ -110,7 +104,6 @@ class shopKomtetkassaPlugin extends shopPlugin {
             return;
         }
 	    $client = new Client($this->komtet_shop_id, $this->komtet_secret_key);
-	    $client->setHost($this->komtet_api_url);
 	    $manager = new QueueManager($client);
 	    $manager->registerQueue('ss-queue', $this->komtet_queue_id);
 

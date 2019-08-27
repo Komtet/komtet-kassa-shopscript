@@ -52,16 +52,16 @@ class shopKomtetkassa {
                 'title' => 'НДС 10%',
             ),
             array(
-                'value' => Vat::RATE_18,
-                'title' => 'НДС 18%',
+                'value' => Vat::RATE_20,
+                'title' => 'НДС 20%',
             ),
             array(
                 'value' => Vat::RATE_110,
                 'title' => 'НДС 10/110',
             ),
             array(
-                'value' => Vat::RATE_118,
-                'title' => 'НДС 18/118',
+                'value' => Vat::RATE_120,
+                'title' => 'НДС 20/120',
             )
 	);
         return $data;

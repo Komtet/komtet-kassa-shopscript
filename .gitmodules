@@ -1,0 +1,3 @@
+[submodule "komtetkassa/lib/vendors/komtet-kassa-php-sdk"]
+	path = komtetkassa/lib/vendors/komtet-kassa-php-sdk
+	url = https://github.com/Komtet/komtet-kassa-php-sdk.git

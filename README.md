@@ -5,11 +5,6 @@
 * Склонируйте репозиторий включая подмодули для подтягивания SDK - git clone --recurse-submodules
 * Скачать установщик Shopscript CMS - https://developers.webasyst.ru/download/
 
-* Добавить в /etc/hosts  127.0.0.1	shopscript.localhost.com
-* Добавить shopscript.cfg в sites-enabled nginx
-```sh
-sudo cp [путь_до_проекта]/komtet-kassa-shopscript-delivery/configuration/shopscript.cfg /etc/nginx/sites-enabled
-```
 * Cоздать в корневом каталоге папку php
 * Распаковать архив Shopscript CMS в папку php
 * В файл /php/.htaccess добавить строчку: *php_value date.timezone 'Europe/Moscow*
@@ -28,7 +23,7 @@ make start_web7
 ```sh
 sudo chmod -R 777 php
 ```
-* Проект будет доступен по адресу: http://shopscript.localhost.com;
+* Проект будет доступен по адресу: localhost:8110;
 * Настройки подключения к бд MySQL:
 ```sh
 Сервер: mysql
@@ -60,4 +55,9 @@ make stop
 * Установить/Обновить модуль в cms
 ```sh
 make update
+```
+
+* Подготовить архив для загрузки в маркет
+```sh
+make release
 ```
