@@ -1,5 +1,3 @@
-# komtet_kassa_shopscript_delivery
-
 ## Запуск проекта
 
 * Склонируйте репозиторий включая подмодули для подтягивания SDK - git clone --recurse-submodules
