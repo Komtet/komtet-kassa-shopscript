@@ -21,10 +21,11 @@ update:  ## Установить/Обновить модуль
 
 release:  ## Архивировать для загрузки в маркет
 	@tar\
-	 --exclude='./komtetkassa/lib/vendors/komtet-kassa-php-sdk/.*'\
-	 --exclude='./komtetkassa/lib/vendors/komtet-kassa-php-sdk/docker_env'\
-	 --exclude='./komtetkassa/lib/vendors/komtet-kassa-php-sdk/tests'\
+	 --exclude='komtetkassa/lib/vendors/komtet-kassa-php-sdk/.*' \
+	 --exclude='komtetkassa/lib/vendors/komtet-kassa-php-sdk/tests' \
+	 --exclude='komtetkassa/lib/vendors/komtet-kassa-php-sdk/docker_env' \
 	 -czvf komtetkassa.tar.gz komtetkassa/
+	 
 
 .PHONY: help
 .DEFAULT_GOAL := help
