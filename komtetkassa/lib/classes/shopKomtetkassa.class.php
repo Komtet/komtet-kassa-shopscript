@@ -212,7 +212,7 @@ JS;
         return $success_url;
      }
 
-     public function getFailureUrl() {
+    public function getFailureUrl() {
          $plugin_id = self::PLUGIN_ID;
          $settings_name = 'komtet_failure_url';
          $plugin = waSystem::getInstance()->getPlugin($plugin_id, true);
@@ -237,4 +237,35 @@ JS;
         return $failure_url;
 	}
 
+	public function getPrepaymentStates() {
+	    $workflow = new shopWorkflow();
+        $actions = $workflow::getConfig();
+        $prepaid_statuses[] = array(
+            'value' => 'dontgive',
+            'title' => 'Не выдавать',
+        );
+        foreach ($actions['actions'] as $key => $v) {
+            if ($v['name'] === 'Оплачен') {
+                $prepaid_statuses[] = array(
+                    'value' => $key,
+                    'title' => $v['name']
+                );
+            }
+        }
+        return $prepaid_statuses;
+    }
+
+	public function getFullpaymentStates() {
+	    $workflow = new shopWorkflow();
+        $actions = $workflow::getConfig();
+        foreach ($actions['actions'] as $key => $v) {
+            if ($v['name'] == 'Оплачен' or $v['name'] == 'Отправлен' or $v['name'] == 'Выполнен') {
+                $fullpayment_statuses[] = array(
+                    'value' => $key,
+                    'title' => $v['name']
+                );
+            }
+        }
+        return $fullpayment_statuses;
+	}
 }

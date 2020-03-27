@@ -32,19 +32,28 @@ return array(
         'options_callback' => array('shopKomtetkassa', 'taxTypesValues')
     ),
 
+    'status_check_prepayment'  => array(
+        'title'        => "Чек предоплаты",
+        'value'        => 'dontgive', // значение по умолчанию
+        'control_type' => waHtmlControl::SELECT,
+        'options_callback' => array('shopKomtetkassa', 'getPrepaymentStates'),
+        'description'  => "Статусы заказа, на которые формируется чек 100% предоплаты. Детальнее о порядке выдачи двух".
+                           "чеков читайте в нашей <b><a href='https://kassa.komtet.ru/blog/predoplata_i_polniy_rasschet'>статье</a></b>.<br><br>",
+    ),
+
+    'status_check_fullpayment'  => array(
+        'title'        => "Чек полного расчета",
+        'value'        => 'pay', // значение по умолчанию
+        'control_type' => waHtmlControl::SELECT,
+        'options_callback' => array('shopKomtetkassa', 'getFullpaymentStates'),
+        'description'  => "Статусы заказа, на которые формируется чек полной оплаты.<br><br>",
+    ),
+
     'komtet_payment_types' => array(
         'title'        => "Способы оплаты",
         'description' => "Выбирете способы оплаты, для которых будет проводиться фискализация платежей, ".
                          "какому средству оплаты соответствует выбранный способ, какой требуется чек и система налогообложения<br><br>",
         'control_type' => waHtmlControl::CUSTOM . ' shopKomtetkassa::getPaymentTypes'
-    ),
-
-    'komtet_complete_action'  => array(
-        'title'        => "Включить фискализацию по событию Заказ выполнен",
-        'description'  => "В некоторых случаях, когда статусы заказа меняются внешними системами, заказ может миновать статус Оплачен. ".
-                          "Используя данный выключатель, можно использовать для фискализации событие Заказ выполнен<br><br>",
-        'value'        => 0, // значение по умолчанию
-        'control_type' => waHtmlControl::CHECKBOX,
     ),
 
     'komtet_use_item_discount'  => array(
@@ -94,10 +103,9 @@ return array(
     'komtet_log'  => array(
         'title'        => "Включить логирование",
         'description'  => "Если логирование Включено, параметры запросов и результаты ответа сервера KOMTET будут записаны в лог: ".
-                          "<b>shop/plugins/komtetkassa/fiscalization.log</b>",
+                          "<b>shop/plugins/komtetkassa/fiscalization.log</b><p>",
         'value'        => 1, // значение по умолчанию
         'control_type' => waHtmlControl::CHECKBOX,
     ),
-
 );
 //EOF
