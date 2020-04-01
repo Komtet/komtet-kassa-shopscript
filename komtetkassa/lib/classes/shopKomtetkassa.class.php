@@ -210,7 +210,7 @@ JS;
             )
         );
         return $success_url;
-     }
+    }
 
     public function getFailureUrl() {
          $plugin_id = self::PLUGIN_ID;
@@ -233,12 +233,11 @@ JS;
                 )
             )
         );
-
         return $failure_url;
 	}
 
-	public function getPrepaymentStates() {
-	    $workflow = new shopWorkflow();
+    public function getPrepaymentStates() {
+        $workflow = new shopWorkflow();
         $actions = $workflow::getConfig();
         $prepaid_statuses[] = array(
             'value' => 'dontgive',
@@ -255,11 +254,12 @@ JS;
         return $prepaid_statuses;
     }
 
-	public function getFullpaymentStates() {
-	    $workflow = new shopWorkflow();
+    public function getFullpaymentStates() {
+        $workflow = new shopWorkflow();
         $actions = $workflow::getConfig();
+        $actions_value = array("Оплачен", "Отправлен", "Выполнен");
         foreach ($actions['actions'] as $key => $v) {
-            if ($v['name'] == 'Оплачен' or $v['name'] == 'Отправлен' or $v['name'] == 'Выполнен') {
+            if (in_array($v['name'], $actions_value)) {
                 $fullpayment_statuses[] = array(
                     'value' => $key,
                     'title' => $v['name']

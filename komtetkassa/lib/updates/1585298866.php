@@ -2,12 +2,12 @@
 $model = new waModel();
 
 try {
-    $res = $model->query("SELECT * FROM shop_product_code WHERE code='nomenclature_code'");
-    if ($res->count() === 0) {
-        throw new waDbException('Нет записей');
-    }
+     $res = $model->query("INSERT INTO shop_product_code (code, name)
+     SELECT * FROM (SELECT 'nomenclature_code', 'Код номенклатуры') AS tmp
+     WHERE NOT EXISTS (
+        SELECT name FROM shop_product_code WHERE code='nomenclature_code' and name='Код номенклатуры' ) LIMIT 1")
 } catch (waDbException $e) {
-    $model->exec("INSERT INTO shop_product_code (code, name) VALUES ('nomenclature_code', 'Код номенклатуры')");
+    waLog::log("Table shop_product_code not found\n",  'db.log');
 }
 
 try {

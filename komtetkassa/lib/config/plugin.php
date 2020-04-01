@@ -7,10 +7,10 @@ return array(
     'vendor' => 1087963,
     'frontend' => true,
     'handlers' => array(
-        'order_action.pay' => 'order_action',
-        'order_action.complete' => 'order_action',
-        'order_action.ship' => 'order_action',
-        'order_action.refund' => 'order_action',
+        'order_action.pay' => 'fiscalize',
+        'order_action.complete' => 'fiscalize',
+        'order_action.ship' => 'fiscalize',
+        'order_action.refund' => 'refund',
         'backend_orders' => 'backend_orders'
     ),
     'img' => 'img/icon_16x16.png'

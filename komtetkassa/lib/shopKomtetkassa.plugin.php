@@ -24,7 +24,7 @@ class shopKomtetkassaPlugin extends shopPlugin {
     const KOMTET_ERROR = 2;
     const INT_MULTIPLICATOR = 100;
     const ACTION_ID = 'fiscalise_internal_action';
-    const Nomenclature = 'nomenclature_code';
+    const NOMENCLATURE = 'nomenclature_code';
     const CLOSED = 'closed';
     const PAYMENTS_METHODS = array(
         'card' => Payment::TYPE_CARD,
@@ -42,7 +42,6 @@ class shopKomtetkassaPlugin extends shopPlugin {
         CalculationMethod::FULL_PAYMENT => CalculationSubject::PRODUCT,
     );
 
-    private $komtet_complete_action;
     private $komtet_use_item_discount;
     private $komtet_shop_id;
     private $komtet_secret_key;
@@ -57,7 +56,6 @@ class shopKomtetkassaPlugin extends shopPlugin {
 
     private function init() {
         $this->komtet_log = (bool) $this->getSettings('komtet_log');
-        $this->komtet_complete_action = (bool) $this->getSettings('komtet_complete_action');
         $this->komtet_use_item_discount = (bool) $this->getSettings('komtet_use_item_discount');
         $this->komtet_shop_id = $this->getSettings('komtet_shop_id');
         $this->komtet_secret_key = $this->getSettings('komtet_secret_key');
@@ -92,29 +90,23 @@ class shopKomtetkassaPlugin extends shopPlugin {
         );
         return $routing->getUrl('shop/frontend/', $route_params, $absolute);
     }
-    // создание запроса  на фискализацию чека
-    public function fiscalize($params) {
-        $this->processReceipt($params, 'payment');
-    }
     // создание запроса на возврат чека
     public function refund($params) {
          $this->processReceipt($params, 'refund');
     }
-    public function order_action($params) {
+    // создание запроса  на фискализацию чека
+    public function fiscalize($params) {
         $this->status_check_prepayment = $this->getSettings('status_check_prepayment');
         $this->status_check_fullpayment = $this->getSettings('status_check_fullpayment');
 
         if ($this->status_check_prepayment == 'dontgive') {
             if ($params['action_id'] == $this->status_check_fullpayment) {
-                $this->fiscalize($params);
-            }
-            if ($params['action_id'] == 'refund') {
-                $this->refund($params);
+                $this->processReceipt($params, 'payment');
             }
         }
 
         if ($this->status_check_prepayment == 'pay' and ($params['action_id'] == $this->status_check_prepayment
-            or $params['action_id'] == $this->status_check_fullpayment or $params['action_id'] == 'refund')
+            or $params['action_id'] == $this->status_check_fullpayment)
             and $this->status_check_prepayment != $this->status_check_fullpayment) {
 
             if ($params['action_id'] == $this->status_check_prepayment) {
@@ -125,22 +117,16 @@ class shopKomtetkassaPlugin extends shopPlugin {
                 $check_type = self::CLOSED;
                 $this->processReceipt($params, 'payment', $check_type);
             }
-            if ($params['action_id'] == 'refund') {
-                $this->processReceipt($params, 'refund');
-            }
         }
 
         if ($this->status_check_prepayment == 'pay' and $this->status_check_fullpayment == 'pay'
-            and ($params['action_id'] == 'pay' or $params['action_id'] == 'refund')) {
+            and $params['action_id'] == 'pay') {
 
             if ($params['action_id'] == 'pay') {
                 $check_type = CalculationMethod::PRE_PAYMENT_FULL;
                 $this->processReceipt($params, 'payment', $check_type);
                 $check_type = self::CLOSED;
                 $this->processReceipt($params, 'payment', $check_type);
-            }
-            if ($params['action_id'] == 'refund') {
-                $this->processReceipt($params, 'refund');
             }
         }
     }
@@ -161,8 +147,9 @@ class shopKomtetkassaPlugin extends shopPlugin {
         if ($operation == 'refund') {
             $check_type = $order_params['check_type'];
         }
-        if ($operation == 'payment' && $order['fiscalised'] && ($check_type == $order_params['check_type']
-            || ($check_type =='pre_payment_full' && $order_params['check_type'] == 'closed'))) {
+        if ($operation == 'payment' && $order['fiscalised'] &&
+            ($check_type == $order_params['check_type'] || ($check_type =='pre_payment_full' &&
+             $order_params['check_type'] == 'closed'))) {
 
             $this->writeLog("Order $order_id already fiscalised");
             return;
@@ -220,20 +207,23 @@ class shopKomtetkassaPlugin extends shopPlugin {
 	    $check->setShouldPrint($print_check); // печать чека на ккт
 
         $isDiscountInPositions = false;
+        $wa_version = wa()->getVersion('webasyst');
         foreach ($order->items as $item) {
             $product = new shopProduct($item['product_id']);
             $orders = new shopOrder($order_id);
-            $order_items_codes = $orders['items_product_codes'][$item['id']]['product_codes'];
 
-            if (!empty($order_items_codes)) {
-                foreach($order_items_codes as $v) {
-                    if ($v['code'] == self::Nomenclature) {
-                        $product_code_flag = true;
-                        $nomenclature_codes = $v['values'];
+            if (version_compare($wa_version, "1.13.7.514", ">=")) {
+                $order_items_codes = $orders['items_product_codes'][$item['id']]['product_codes'];
+                if (!empty($order_items_codes)) {
+                    foreach($order_items_codes as $v) {
+                        if ($v['code'] == self::NOMENCLATURE) {
+                            $product_code_flag = true;
+                            $nomenclature_codes = $v['values'];
+                        }
                     }
+                } else {
+                    $product_code_flag = false;
                 }
-            } else {
-                $product_code_flag = false;
             }
             if ($product_code_flag && $item['quantity'] <> count($nomenclature_codes)
                 && $check_type != CalculationMethod::PRE_PAYMENT_FULL){
@@ -287,6 +277,17 @@ class shopKomtetkassaPlugin extends shopPlugin {
                     round($item_total, 2),
                     0,
                     $vat);
+                // // start 1C sku
+                // $sql_one = sprintf(
+                //     'SELECT id_1c FROM shop_product_skus WHERE sku = "%s" AND product_id = %d;',
+                //     $item['sku'],
+                //     $item['product_id']
+                // );
+                // $model_one = new waModel();
+                // $data_one = $model_one->query($sql_one)->fetch();
+
+                // $position->setId($data_one['id_1c']);
+                // // end 1C sku
                 $position->setCalculationMethod($calc_method = self::CALCULATION_METHOD[$check_type]);
                 $position->setCalculationSubject($calc_subject = self::CALCULATION_SUBJECT[$check_type]);
                 $position->setId($item['sku'] ?: $item['product_id']);
@@ -340,9 +341,6 @@ class shopKomtetkassaPlugin extends shopPlugin {
             $result = $manager->putCheck($check, 'ss-queue');
         } catch (SdkException $e) {
             $this->pluginError(self::KOMTET_ERROR, $e);
-        } finally {
-            $model = new waModel();
-            $model->exec("UPDATE `shop_order` SET check_type = ? WHERE id = ?", $check_type, $params['order_id']);
         }
 
         if ($local_changed) {
@@ -350,6 +348,8 @@ class shopKomtetkassaPlugin extends shopPlugin {
         }
 
         if ($result) {
+            $model = new waModel();
+            $model->exec("UPDATE `shop_order` SET check_type = ? WHERE id = ?", $check_type, $params['order_id']);
             $this->setOrderStatus($order_id, 2);
             if ($operation == 'payment') {
                 $this->writeLog("Receipt for an order $order_id accepted");
