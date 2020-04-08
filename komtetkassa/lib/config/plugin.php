@@ -9,6 +9,7 @@ return array(
     'handlers' => array(
         'order_action.pay' => 'fiscalize',
         'order_action.complete' => 'fiscalize',
+        'order_action.ship' => 'fiscalize',
         'order_action.refund' => 'refund',
         'backend_orders' => 'backend_orders'
     ),

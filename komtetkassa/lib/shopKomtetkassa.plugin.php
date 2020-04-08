@@ -2,9 +2,12 @@
 
 require __DIR__.'/vendors/komtet-kassa-php-sdk/autoload.php';
 
+use Komtet\KassaSdk\CalculationMethod;
+use Komtet\KassaSdk\CalculationSubject;
 use Komtet\KassaSdk\Client;
 use Komtet\KassaSdk\QueueManager;
 use Komtet\KassaSdk\Check;
+use Komtet\KassaSdk\Nomenclature;
 use Komtet\KassaSdk\Payment;
 use Komtet\KassaSdk\Position;
 use Komtet\KassaSdk\Vat;
@@ -21,8 +24,26 @@ class shopKomtetkassaPlugin extends shopPlugin {
     const KOMTET_ERROR = 2;
     const INT_MULTIPLICATOR = 100;
     const ACTION_ID = 'fiscalise_internal_action';
+    const NOMENCLATURE = 'nomenclature_code';
+    const CLOSED = 'closed';
+    const DONTGIVE = 'dontgive';
+    const WA_VERSION_WITH_NOMENCLATURE = '1.13.7.514';
+    const PAYMENTS_METHODS = array(
+        'card' => Payment::TYPE_CARD,
+        'cash' => PAYMENT::TYPE_CASH,
+        'prepayment' => PAYMENT::TYPE_PREPAYMENT,
+    );
+    const CALCULATION_METHOD = array(
+        self::CLOSED => CalculationMethod::FULL_PAYMENT,
+        CalculationMethod::PRE_PAYMENT_FULL => CalculationMethod::PRE_PAYMENT_FULL,
+        CalculationMethod::FULL_PAYMENT =>  CalculationMethod::FULL_PAYMENT,
+    );
+    const CALCULATION_SUBJECT = array(
+        CalculationMethod::PRE_PAYMENT_FULL => CalculationSubject::PAYMENT,
+        self::CLOSED => CalculationSubject::PRODUCT,
+        CalculationMethod::FULL_PAYMENT => CalculationSubject::PRODUCT,
+    );
 
-    private $komtet_complete_action;
     private $komtet_use_item_discount;
     private $komtet_shop_id;
     private $komtet_secret_key;
@@ -37,7 +58,6 @@ class shopKomtetkassaPlugin extends shopPlugin {
 
     private function init() {
         $this->komtet_log = (bool) $this->getSettings('komtet_log');
-        $this->komtet_complete_action = (bool) $this->getSettings('komtet_complete_action');
         $this->komtet_use_item_discount = (bool) $this->getSettings('komtet_use_item_discount');
         $this->komtet_shop_id = $this->getSettings('komtet_shop_id');
         $this->komtet_secret_key = $this->getSettings('komtet_secret_key');
@@ -54,6 +74,7 @@ class shopKomtetkassaPlugin extends shopPlugin {
             $this->komtet_alert_email = $this->main_shop_email;
         }
 
+        $this->$wa_version = wa()->getVersion('webasyst');
     }
 
     //Необходимо для совместимости интерфейса при вызове shopPayment::getOrderData
@@ -72,21 +93,33 @@ class shopKomtetkassaPlugin extends shopPlugin {
         );
         return $routing->getUrl('shop/frontend/', $route_params, $absolute);
     }
-    // создание запроса  на фискализацию чека
-    public function fiscalize($params) {
-        $this->processReceipt($params, 'payment');
-    }
     // создание запроса на возврат чека
     public function refund($params) {
-         $this->processReceipt($params, 'refund');
+        $shop_order_model = new shopOrderModel();
+        $order_params = $shop_order_model->getById($params['order_id']);
+        $this->processReceipt($params, 'refund', $order_params['check_type']);
     }
+    // создание запроса  на фискализацию чека
+    public function fiscalize($params) {
+        $this->status_check_prepayment = $this->getSettings('status_check_prepayment');
+        $this->status_check_fullpayment = $this->getSettings('status_check_fullpayment');
 
-    // формирование запроса
-    private function processReceipt($params, $operation = 'payment') {
-        $this->init();
-        if ($params['action_id'] == 'complete' && !$this->komtet_complete_action) {
-            return;
+        if ($this->status_check_prepayment == self::DONTGIVE) {
+            if ($params['action_id'] == $this->status_check_fullpayment) {
+                $this->processReceipt($params, 'payment');
+            }
+        } else {
+            if ($params['action_id'] == $this->status_check_prepayment) {
+                $this->processReceipt($params, 'payment', CalculationMethod::PRE_PAYMENT_FULL);
+            }
+            if ($params['action_id'] == $this->status_check_fullpayment) {
+                $this->processReceipt($params, 'payment', self::CLOSED);
+            }
         }
+    }
+    // формирование запроса
+    private function processReceipt($params, $operation = 'payment', $check_type=CalculationMethod::FULL_PAYMENT) {
+        $this->init();
         if (!$this->komtet_shop_id || !$this->komtet_secret_key || !$this->komtet_queue_id) {
             $this->pluginError(self::REQUIRED_PROPERTY_ERROR);
             return false;
@@ -96,7 +129,13 @@ class shopKomtetkassaPlugin extends shopPlugin {
         $order = $this->getOrderData($order_id, $this);
         $payment_id = $order->params['payment_id'];
 
-        if ($operation == 'payment' && $order['fiscalised']) {
+        $shop_order_model = new shopOrderModel();
+        $order_params = $shop_order_model->getById($order_id);
+
+        if ($operation == 'payment' && $order['fiscalised'] &&
+            ($check_type == $order_params['check_type'] || ($check_type =='pre_payment_full' &&
+             $order_params['check_type'] == 'closed'))) {
+
             $this->writeLog("Order $order_id already fiscalised");
             return;
         }
@@ -113,7 +152,6 @@ class shopKomtetkassaPlugin extends shopPlugin {
             $this->writeLog($payment_id . ':' . $order->params['payment_plugin']);
             $this->writeLog($order);
         }
-
         // В случае использования на сервере кирилической локали, например ru_RU.UTF-8,
         // возникает проблема с форматированием json
         $cur_local = setlocale(LC_NUMERIC, 0);
@@ -156,6 +194,19 @@ class shopKomtetkassaPlugin extends shopPlugin {
         $isDiscountInPositions = false;
         foreach ($order->items as $item) {
             $product = new shopProduct($item['product_id']);
+            $orders = new shopOrder($order_id);
+
+            if (version_compare($this->$wa_version, self::WA_VERSION_WITH_NOMENCLATURE, ">=") &&
+                $orders['items_product_codes'][$item['id']]['product_codes']) {
+                $order_items_codes = $orders['items_product_codes'][$item['id']]['product_codes'];
+                if (!empty($order_items_codes)) {
+                    foreach($order_items_codes as $v) {
+                        if ($v['code'] == self::NOMENCLATURE) {
+                           $nomenclatures = $v['values'];
+                        }
+                    }
+                }
+            }
 
             if($product['tax_id'] > 0) {
                 $sql_one = 'SELECT tax_value FROM shop_tax_regions where tax_id = '.$product['tax_id'].' ;';
@@ -167,45 +218,40 @@ class shopKomtetkassaPlugin extends shopPlugin {
                 $vat = new Vat(Vat::RATE_NO);
             }
 
-            $item_total = $item['price'] * $item['quantity'];
-
-            if ($this->komtet_use_item_discount) {
-                $item_total = $item_total - $item['total_discount'];
-            }
-
-            $position = new Position(
-                html_entity_decode($item['name'] . ($item['sku'] != '' ? ", " . $item['sku'] : '')),
-                round($item['price'], 2),
-                round(floatval($item['quantity']), 2),
-                round($item_total, 2),
-                0,
-                $vat);
-
             if ($item['total_discount'] > 0) {
                 $isDiscountInPositions = true;
             }
 
-            // // start 1C sku
-            // $sql_one = sprintf(
-            //     'SELECT id_1c FROM shop_product_skus WHERE sku = "%s" AND product_id = %d;',
-            //     $item['sku'],
-            //     $item['product_id']
-            // );
-            // $model_one = new waModel();
-            // $data_one = $model_one->query($sql_one)->fetch();
+            //если есть номеклатура, разбиваем на единичные позиции
+            if (isset($nomenclatures)) {
+                // если тип чека должен содержать номенклатуру, но кол-во позиций не совпадает
+                // с кол-вом кодов, то чек не фискализируем
+                if ($check_type == CalculationMethod::FULL_PAYMENT and
+                    $item['quantity'] <> count($nomenclatures)) {
+                    $this->writeLog("You need to fill out product codes for each product!");
+                    return;
+                }
 
-            // $position->setId($data_one['id_1c']);
-            // // end 1C sku
+                for($i=0; $i < $item['quantity']; $i++) {
+                    $position = $this->generatePosition($item, 1, $vat, $check_type);
 
-            $position->setId($item['sku'] ?: $item['product_id']);
-
-            $check->addPosition($position);
+                    if ($check_type == CalculationMethod::FULL_PAYMENT) {
+                        $nomenclature = new Nomenclature(Nomenclature::SHOES, $nomenclatures[$i]);
+                        $position->setNomenclature($nomenclature);
+                    }
+                    $check->addPosition($position);
+                    continue;
+                }
+            } else {
+                $position = $this->generatePosition($item, $item['quantity'], $vat, $check_type);
+                $check->addPosition($position);
+            }
+            $nomenclatures = NULL;
         }
 
-        if ($order->discount > 0 && !($this->komtet_use_item_discount && $isDiscountInPositions)) {            
+        if ($order->discount > 0 && !($this->komtet_use_item_discount && $isDiscountInPositions)) {
             $check->applyDiscount(round(floatval($order->discount), 2));
         }
-
         // наличие доставки
         if (intval($order['shipping']) > 0) {
             try {
@@ -232,9 +278,9 @@ class shopKomtetkassaPlugin extends shopPlugin {
             ? $this->komtet_payment_types[$payment_id]['fisc_payment_type']
             : 'card';
 
-        $payment = new Payment($payment_type == 'card' ?
-                               Payment::TYPE_CARD :
-                               Payment::TYPE_CASH, round($order->total, 2));
+        $payment = new Payment($check_type == 'closed' && $operation == 'payment' ?
+                               self::PAYMENTS_METHODS['prepayment']:
+                               self::PAYMENTS_METHODS[$payment_type], round($order->total, 2));
 
         $check->addPayment($payment);
 
@@ -255,6 +301,8 @@ class shopKomtetkassaPlugin extends shopPlugin {
         }
 
         if ($result) {
+            $model = new waModel();
+            $model->exec("UPDATE `shop_order` SET check_type = ? WHERE id = ?", $check_type, $params['order_id']);
             $this->setOrderStatus($order_id, 2);
             if ($operation == 'payment') {
                 $this->writeLog("Receipt for an order $order_id accepted");
@@ -264,7 +312,6 @@ class shopKomtetkassaPlugin extends shopPlugin {
         } else {
             $this->pluginError(self::KOMTET_ERROR, $result);
         }
-
     }
 
     // изменяем статус заказа
@@ -399,7 +446,6 @@ class shopKomtetkassaPlugin extends shopPlugin {
             $order['shipping'] = shop_currency($order['shipping'], $order['currency'], $currency_id, false);
             $order['discount'] = shop_currency($order['discount'], $order['currency'], $currency_id, false);
         }
-
         $order_data = array(
             'id_str'           => ifempty($order['id_str'], $order['id']),
             'id'               => $order['id'],
@@ -513,6 +559,44 @@ class shopKomtetkassaPlugin extends shopPlugin {
                 $this->writeLog("Некорректный email для уведомлений");
             }
         }
+    }
+    //формирование позици
+    private function generatePosition($item, $quantity, $vat, $check_type) {
+        $item_total = $item['price'] * $quantity;
+
+        // считаем скидки
+        if ($this->komtet_use_item_discount) {
+            //подсчет скидок для каждой единицы товара
+            if ($quantity <> $item['quantity']) {
+                $item_total = $item_total - $item['total_discount']/$item['quantity'];
+            } else {
+                $item_total = $item_total - $item['total_discount'];
+            }
+        }
+
+        $position = new Position(
+            html_entity_decode($item['name'] . ($item['sku'] != '' ? ", " . $item['sku'] : '')),
+            round($item['price'], 2),
+            round(floatval($quantity), 2),
+            round($item_total, 2),
+            0,
+            $vat);
+        // // start 1C sku
+            // $sql_one = sprintf(
+            //     'SELECT id_1c FROM shop_product_skus WHERE sku = "%s" AND product_id = %d;',
+            //     $item['sku'],
+            //     $item['product_id']
+            // );
+            // $model_one = new waModel();
+            // $data_one = $model_one->query($sql_one)->fetch();
+
+            // $position->setId($data_one['id_1c']);
+        // // end 1C sku
+        $position->setId($item['sku'] ?: $item['product_id']);
+        $position->setCalculationMethod(self::CALCULATION_METHOD[$check_type]);
+        $position->setCalculationSubject(self::CALCULATION_SUBJECT[$check_type]);
+
+        return $position;
     }
 
 }
