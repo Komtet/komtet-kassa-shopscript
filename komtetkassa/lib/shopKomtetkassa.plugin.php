@@ -95,7 +95,9 @@ class shopKomtetkassaPlugin extends shopPlugin {
     }
     // создание запроса на возврат чека
     public function refund($params) {
-         $this->processReceipt($params, 'refund');
+        $shop_order_model = new shopOrderModel();
+        $order_params = $shop_order_model->getById($params['order_id']);
+        $this->processReceipt($params, 'refund', $order_params['check_type']);
     }
     // создание запроса  на фискализацию чека
     public function fiscalize($params) {
@@ -129,9 +131,6 @@ class shopKomtetkassaPlugin extends shopPlugin {
 
         $shop_order_model = new shopOrderModel();
         $order_params = $shop_order_model->getById($order_id);
-        if ($operation == 'refund') {
-            $check_type = $order_params['check_type'];
-        }
 
         if ($operation == 'payment' && $order['fiscalised'] &&
             ($check_type == $order_params['check_type'] || ($check_type =='pre_payment_full' &&
