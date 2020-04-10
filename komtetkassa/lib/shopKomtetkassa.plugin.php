@@ -74,7 +74,7 @@ class shopKomtetkassaPlugin extends shopPlugin {
             $this->komtet_alert_email = $this->main_shop_email;
         }
 
-        $this->$wa_version = wa()->getVersion('webasyst');
+        $this->wa_version = wa()->getVersion('webasyst');
     }
 
     //Необходимо для совместимости интерфейса при вызове shopPayment::getOrderData
@@ -196,7 +196,7 @@ class shopKomtetkassaPlugin extends shopPlugin {
             $product = new shopProduct($item['product_id']);
             $orders = new shopOrder($order_id);
 
-            if (version_compare($this->$wa_version, self::WA_VERSION_WITH_NOMENCLATURE, ">=") &&
+            if (version_compare($this->wa_version, self::WA_VERSION_WITH_NOMENCLATURE, ">=") &&
                 $orders['items_product_codes'][$item['id']]['product_codes']) {
                 $order_items_codes = $orders['items_product_codes'][$item['id']]['product_codes'];
                 if (!empty($order_items_codes)) {
