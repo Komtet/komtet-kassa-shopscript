@@ -266,7 +266,6 @@ class shopKomtetkassaPlugin extends shopPlugin {
                 round($order['shipping'], 2),
                 1,
                 round($order['shipping'], 2),
-                0,
                 $vat
             );
             $check->addPosition($position);
@@ -579,7 +578,6 @@ class shopKomtetkassaPlugin extends shopPlugin {
             round($item['price'], 2),
             round(floatval($quantity), 2),
             round($item_total, 2),
-            0,
             $vat);
         // // start 1C sku
             // $sql_one = sprintf(
