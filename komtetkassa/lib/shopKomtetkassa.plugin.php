@@ -226,7 +226,7 @@ class shopKomtetkassaPlugin extends shopPlugin {
             if (isset($nomenclatures)) {
                 // если тип чека должен содержать номенклатуру, но кол-во позиций не совпадает
                 // с кол-вом кодов, то чек не фискализируем
-                if ($check_type == CalculationMethod::FULL_PAYMENT and
+                if ($check_type != CalculationMethod::PRE_PAYMENT_FULL and
                     $item['quantity'] <> count($nomenclatures)) {
                     $this->writeLog("You need to fill out product codes for each product!");
                     return;
@@ -235,7 +235,7 @@ class shopKomtetkassaPlugin extends shopPlugin {
                 for($i=0; $i < $item['quantity']; $i++) {
                     $position = $this->generatePosition($item, 1, $vat, $check_type);
 
-                    if ($check_type == CalculationMethod::FULL_PAYMENT) {
+                    if ($check_type != CalculationMethod::PRE_PAYMENT_FULL) {
                         $nomenclature = new Nomenclature(Nomenclature::SHOES, $nomenclatures[$i]);
                         $position->setNomenclature($nomenclature);
                     }
