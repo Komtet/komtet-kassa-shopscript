@@ -236,7 +236,7 @@ class shopKomtetkassaPlugin extends shopPlugin {
                     $position = $this->generatePosition($item, 1, $vat, $check_type);
 
                     if ($check_type != CalculationMethod::PRE_PAYMENT_FULL) {
-                        $nomenclature = new Nomenclature(Nomenclature::SHOES, $nomenclatures[$i]);
+                        $nomenclature = new Nomenclature($nomenclatures[$i]);
                         $position->setNomenclature($nomenclature);
                     }
                     $check->addPosition($position);
@@ -266,7 +266,6 @@ class shopKomtetkassaPlugin extends shopPlugin {
                 round($order['shipping'], 2),
                 1,
                 round($order['shipping'], 2),
-                0,
                 $vat
             );
             $check->addPosition($position);
@@ -579,7 +578,6 @@ class shopKomtetkassaPlugin extends shopPlugin {
             round($item['price'], 2),
             round(floatval($quantity), 2),
             round($item_total, 2),
-            0,
             $vat);
         // // start 1C sku
             // $sql_one = sprintf(
