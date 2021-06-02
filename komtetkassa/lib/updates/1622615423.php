@@ -2,8 +2,8 @@
 
 // rm unused files from kk_php_sdk
 $files = array(
-    'plugins/komtetkassa/lib/vendors/komtet-kassa-php-sdk/src/Yura.php',
-    'plugins/komtetkassa/lib/vendors/komtet-kassa-php-sdk/tests/Yura.php'
+    'plugins/komtetdelivery/lib/vendors/komtet-kassa-php-sdk/src/CourierManager.php',
+    'plugins/komtetdelivery/lib/vendors/komtet-kassa-php-sdk/tests/CourierManagerTest.php'
 );
 
 
