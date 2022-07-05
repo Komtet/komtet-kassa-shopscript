@@ -24,7 +24,7 @@ class shopKomtetkassaPlugin extends shopPlugin {
     const KOMTET_ERROR = 2;
     const INT_MULTIPLICATOR = 100;
     const ACTION_ID = 'fiscalise_internal_action';
-    const NOMENCLATURE = 'nomenclature_code';
+    const NOMENCLATURE = 'chestnyznak';
     const CLOSED = 'closed';
     const DONTGIVE = 'dontgive';
     const WA_VERSION_WITH_NOMENCLATURE = '1.13.7.514';

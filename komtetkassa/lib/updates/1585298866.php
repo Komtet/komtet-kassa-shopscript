@@ -3,9 +3,9 @@ $model = new waModel();
 
 try {
      $res = $model->query("INSERT INTO shop_product_code (code, name)
-     SELECT * FROM (SELECT 'nomenclature_code', 'Код номенклатуры') AS tmp
+     SELECT * FROM (SELECT 'chestnyznak', 'Код номенклатуры') AS tmp
      WHERE NOT EXISTS (
-        SELECT name FROM shop_product_code WHERE code='nomenclature_code' and name='Код номенклатуры' ) LIMIT 1");
+        SELECT name FROM shop_product_code WHERE code='chestnyznak' and name='Код номенклатуры' ) LIMIT 1");
 } catch (waDbException $e) {
     waLog::log("Table shop_product_code not found\n",  'db.log');
 }
