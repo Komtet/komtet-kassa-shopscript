@@ -13,7 +13,7 @@ services:
     volumes:
       - ./data/mysql:/var/lib/mysql
     ports:
-      - "9906:3306"
+      - "9908:3306"
 
   web5:
     image: ss_web:last
