@@ -268,6 +268,8 @@ class shopKomtetkassaPlugin extends shopPlugin {
                 round($order['shipping'], 2),
                 $vat
             );
+            $position->setCalculationMethod(self::CALCULATION_METHOD[$check_type]);
+            $position->setCalculationSubject(self::CALCULATION_SUBJECT[$check_type]);
             $check->addPosition($position);
         }
 
