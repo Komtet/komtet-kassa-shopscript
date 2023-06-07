@@ -4,7 +4,7 @@ services:
 
   db:
     image: mysql:5.7
-    container_name: db
+    container_name: komtet-kassa-shopscript-db
     environment:
       MYSQL_ROOT_PASSWORD: my_secret_pw_shh
       MYSQL_DATABASE: test_db

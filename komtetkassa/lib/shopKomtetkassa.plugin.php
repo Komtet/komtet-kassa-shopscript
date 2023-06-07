@@ -105,14 +105,14 @@ class shopKomtetkassaPlugin extends shopPlugin {
         $this->status_check_fullpayment = $this->getSettings('status_check_fullpayment');
 
         if ($this->status_check_prepayment == self::DONTGIVE) {
-            if ($params['action_id'] == $this->status_check_fullpayment) {
+            if ($params['after_state_id'] == $this->status_check_fullpayment) {
                 $this->processReceipt($params, 'payment');
             }
         } else {
-            if ($params['action_id'] == $this->status_check_prepayment) {
+            if ($params['after_state_id'] == $this->status_check_prepayment) {
                 $this->processReceipt($params, 'payment', CalculationMethod::PRE_PAYMENT_FULL);
             }
-            if ($params['action_id'] == $this->status_check_fullpayment) {
+            if ($params['after_state_id'] == $this->status_check_fullpayment) {
                 $this->processReceipt($params, 'payment', self::CLOSED);
             }
         }
