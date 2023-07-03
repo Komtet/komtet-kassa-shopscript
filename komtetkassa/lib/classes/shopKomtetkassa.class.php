@@ -243,13 +243,11 @@ JS;
             'value' => 'dontgive',
             'title' => 'Не выдавать',
         );
-        foreach ($actions['actions'] as $key => $v) {
-            if ($v['name'] === 'Оплачен') {
-                $prepaid_statuses[] = array(
-                    'value' => $key,
-                    'title' => $v['name']
-                );
-            }
+        foreach ($actions['states'] as $key => $v) {
+            $prepaid_statuses[] = array(
+                'value' => $key,
+                'title' => $v['name']
+            );
         }
         return $prepaid_statuses;
     }
@@ -257,15 +255,14 @@ JS;
     public function getFullpaymentStates() {
         $workflow = new shopWorkflow();
         $actions = $workflow::getConfig();
-        $actions_value = array("Оплачен", "Отправлен", "Выполнен");
-        foreach ($actions['actions'] as $key => $v) {
-            if (in_array($v['name'], $actions_value)) {
-                $fullpayment_statuses[] = array(
-                    'value' => $key,
-                    'title' => $v['name']
-                );
-            }
+
+        foreach ($actions['states'] as $key => $v) {
+            $fullpayment_statuses[] = array(
+                'value' => $key,
+                'title' => $v['name']
+            );
         }
+
         return $fullpayment_statuses;
-	}
+    }
 }

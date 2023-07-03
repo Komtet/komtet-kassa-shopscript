@@ -37,13 +37,13 @@ return array(
         'value'        => 'dontgive', // значение по умолчанию
         'control_type' => waHtmlControl::SELECT,
         'options_callback' => array('shopKomtetkassa', 'getPrepaymentStates'),
-        'description'  => "Статусы заказа, на которые формируется чек 100% предоплаты. Детальнее о порядке выдачи двух".
+        'description'  => "Статусы заказа, на которые формируется чек 100% предоплаты. Детальнее о порядке выдачи двух ".
                            "чеков читайте в нашей <b><a href='https://kassa.komtet.ru/blog/predoplata_i_polniy_rasschet'>статье</a></b>.<br><br>",
     ),
 
     'status_check_fullpayment'  => array(
         'title'        => "Чек полного расчета",
-        'value'        => 'pay', // значение по умолчанию
+        'value'        => 'paid', // значение по умолчанию
         'control_type' => waHtmlControl::SELECT,
         'options_callback' => array('shopKomtetkassa', 'getFullpaymentStates'),
         'description'  => "Статусы заказа, на которые формируется чек полной оплаты.<br><br>",

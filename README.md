@@ -5,7 +5,7 @@
 
 * Cоздать в корневом каталоге папку php
 * Распаковать архив Shopscript CMS в папку php
-* В файл /php/.htaccess добавить строчку: *php_value date.timezone 'Europe/Moscow*
+* В файл /php/.htaccess добавить строчку: *php_value date.timezone 'Europe/Moscow'*
 
 * Запустить сборку проекта
 ```sh
