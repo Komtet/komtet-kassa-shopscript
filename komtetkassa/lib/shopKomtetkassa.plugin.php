@@ -84,7 +84,7 @@ class shopKomtetkassaPlugin extends shopPlugin {
     public function getActionId() {
         return self::ACTION_ID;
     }
-    public function getCallbackUrl($absolute = true, $path) {
+    public function getCallbackUrl($path, $absolute = true) {
         $routing = wa()->getRouting();
 
         $route_params = array(
@@ -118,7 +118,7 @@ class shopKomtetkassaPlugin extends shopPlugin {
         }
     }
     // формирование запроса
-    private function processReceipt($params, $operation = 'payment', $check_type=CalculationMethod::FULL_PAYMENT) {
+    private function processReceipt($params, $operation = 'payment', $check_type = CalculationMethod::FULL_PAYMENT) {
         $this->init();
         if (!$this->komtet_shop_id || !$this->komtet_secret_key || !$this->komtet_queue_id) {
             $this->pluginError(self::REQUIRED_PROPERTY_ERROR);

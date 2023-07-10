@@ -188,7 +188,7 @@ JS;
         return $controls;
     }
 
-    public function getSuccessUrl() {
+    public static function getSuccessUrl() {
         $plugin_id = self::PLUGIN_ID;
         $settings_name = 'komtet_success_url';
         $plugin = waSystem::getInstance()->getPlugin($plugin_id, true);
@@ -205,14 +205,14 @@ JS;
             array_merge(
                 $params,
                 array(
-                    'value' => $plugin->getCallbackUrl(true, "success")
+                    'value' => $plugin->getCallbackUrl("success", true)
                 )
             )
         );
         return $success_url;
     }
 
-    public function getFailureUrl() {
+    public static function getFailureUrl() {
          $plugin_id = self::PLUGIN_ID;
          $settings_name = 'komtet_failure_url';
          $plugin = waSystem::getInstance()->getPlugin($plugin_id, true);
@@ -229,14 +229,14 @@ JS;
             array_merge(
                 $params,
                 array(
-                    'value' => $plugin->getCallbackUrl(true, "failure")
+                    'value' => $plugin->getCallbackUrl("failure", true)
                 )
             )
         );
         return $failure_url;
-	}
+    }
 
-    public function getPrepaymentStates() {
+    public static function getPrepaymentStates() {
         $workflow = new shopWorkflow();
         $actions = $workflow::getConfig();
         $prepaid_statuses[] = array(
@@ -252,7 +252,7 @@ JS;
         return $prepaid_statuses;
     }
 
-    public function getFullpaymentStates() {
+    public static function getFullpaymentStates() {
         $workflow = new shopWorkflow();
         $actions = $workflow::getConfig();
 

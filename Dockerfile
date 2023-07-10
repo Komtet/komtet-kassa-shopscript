@@ -10,3 +10,10 @@ RUN docker-php-ext-install mysqli
 
 WORKDIR /var/www/html
 COPY php .
+
+
+FROM php:8.0-apache as php8
+RUN docker-php-ext-install mysqli
+
+WORKDIR /var/www/html
+COPY php .
