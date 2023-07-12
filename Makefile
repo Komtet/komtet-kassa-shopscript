@@ -15,6 +15,9 @@ start_web5: stop  ## Запустить контейнер
 start_web7: stop  ## Запустить контейнер
 	@docker-compose up -d web7
 
+start_web8: stop  ## Запустить контейнер
+	@docker-compose up web8
+
 update:  ## Установить/Обновить модуль
 	@rm -rf php/wa-apps/shop/plugins/komtetkassa &&\
 	 cp -r komtetkassa php/wa-apps/shop/plugins

@@ -48,3 +48,20 @@ services:
       - db:mysql
     stdin_open: true
     tty: true
+
+  web8:
+    image: ss_web:last
+    build:
+      context: .
+      target: php8
+    container_name: web8
+    depends_on:
+      - db
+    volumes:
+      - ./php/:/var/www/html/
+    ports:
+      - "8110:80"
+    links:
+      - db:mysql
+    stdin_open: true
+    tty: true
