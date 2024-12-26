@@ -1,6 +1,6 @@
 <?php
 
-use Komtet\KassaSdk\Vat;
+use Komtet\KassaSdk\v1\Vat;
 
 class shopKomtetkassa {
 
@@ -20,10 +20,6 @@ class shopKomtetkassa {
         array(
             'value' => 2,
             'title' => 'УСН доход - расход',
-            ),
-        array(
-            'value' => 3,
-            'title' => 'ЕНВД',
             ),
         array(
             'value' => 4,
@@ -48,12 +44,28 @@ class shopKomtetkassa {
                 'title' => 'НДС 0%',
             ),
             array(
+                'value' => Vat::RATE_5,
+                'title' => 'НДС 5%',
+            ),
+            array(
+                'value' => Vat::RATE_7,
+                'title' => 'НДС 7%',
+            ),
+            array(
                 'value' => Vat::RATE_10,
                 'title' => 'НДС 10%',
             ),
             array(
                 'value' => Vat::RATE_20,
                 'title' => 'НДС 20%',
+            ),
+            array(
+                'value' => Vat::RATE_105,
+                'title' => 'НДС 5/105',
+            ),
+            array(
+                'value' => Vat::RATE_107,
+                'title' => 'НДС 7/107',
             ),
             array(
                 'value' => Vat::RATE_110,
