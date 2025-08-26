@@ -44,31 +44,36 @@ class shopKomtetkassaPlugin extends shopPlugin {
         CalculationMethod::FULL_PAYMENT => CalculationSubject::PRODUCT,
     );
 
-    private $komtet_use_item_discount;
-    private $komtet_shop_id;
-    private $komtet_secret_key;
-    private $komtet_print_check;
-    private $komtet_queue_id;
-    private $komtet_tax_type;
-    private $komtet_payment_types;
-    private $komtet_delivery_tax;
     private $komtet_alert;
     private $komtet_alert_email;
+    private $komtet_delivery_tax;
+    private $komtet_internet;
     private $komtet_log;
+    private $komtet_payment_types;
+    private $komtet_print_check;
+    private $komtet_queue_id;
+    private $komtet_secret_key;
+    private $komtet_shop_id;
+    private $komtet_tax_type;
+    private $komtet_use_item_discount;
+
+
 
     private function init() {
+        $this->komtet_alert = (bool) $this->getSettings('komtet_alert');
+        $this->komtet_delivery_tax = $this->getSettings('komtet_delivery_tax');
+        $this->komtet_internet = (bool) $this->getSettings('komtet_internet');
         $this->komtet_log = (bool) $this->getSettings('komtet_log');
-        $this->komtet_use_item_discount = (bool) $this->getSettings('komtet_use_item_discount');
-        $this->komtet_shop_id = $this->getSettings('komtet_shop_id');
-        $this->komtet_secret_key = $this->getSettings('komtet_secret_key');
+        $this->komtet_payment_types = $this->getSettings('komtet_payment_types');
         $this->komtet_print_check = (bool) $this->getSettings('komtet_print_check');
         $this->komtet_queue_id = $this->getSettings('komtet_queue_id');
+        $this->komtet_secret_key = $this->getSettings('komtet_secret_key');
+        $this->komtet_shop_id = $this->getSettings('komtet_shop_id');
         $this->komtet_tax_type = (int) $this->getSettings('komtet_tax_type');
-        $this->komtet_payment_types = $this->getSettings('komtet_payment_types');
-        $this->komtet_delivery_tax = $this->getSettings('komtet_delivery_tax');
-        $this->komtet_alert = (bool) $this->getSettings('komtet_alert');
-        $this->main_shop_email = $this->validateEmail(wa('shop')->getConfig()->getGeneralSettings('email'));
+        $this->komtet_use_item_discount = (bool) $this->getSettings('komtet_use_item_discount');
+
         $this->komtet_alert_email = $this->validateEmail($this->getSettings('komtet_alert_email'));
+        $this->main_shop_email = $this->validateEmail(wa('shop')->getConfig()->getGeneralSettings('email'));
 
         if(!$this->komtet_alert_email) {
             $this->komtet_alert_email = $this->main_shop_email;
@@ -165,12 +170,11 @@ class shopKomtetkassaPlugin extends shopPlugin {
         $customer_email = $order->getContactField('email', 'default');
         $customer_phone = $order->getContactField('phone', 'default');
 
-	    if (ifset($customer_email)) {
+        if (!empty($customer_email)) {
             $user = $customer_email;
-        } else {
-            if (ifset($customer_phone)) {
-                $user = $customer_phone;
-            }
+        } elseif (!empty($customer_phone)) {
+            $validated_phone = $this->validatePhone($customer_phone);
+            $user = $validated_phone;
         }
 
         $tax_type = isset($this->komtet_payment_types[$payment_id])
@@ -190,6 +194,11 @@ class shopKomtetkassaPlugin extends shopPlugin {
             : true;
 
 	    $check->setShouldPrint($print_check); // печать чека на ккт
+
+        // Признак расчета в сети интернет
+        if ($this->komtet_internet) {
+            $check->setInternet(true);
+        }
 
         $isDiscountInPositions = false;
         foreach ($order->items as $item) {
@@ -213,10 +222,13 @@ class shopKomtetkassaPlugin extends shopPlugin {
                 $model_one = new waModel();
                 $data_one = $model_one->query($sql_one)->fetchAll();
 
-                $vat = new Vat(intval($data_one[0]['tax_value']));
+                // Используем расчетную ставку НДС для предоплаты
+                $vatRate = $this->getVatForCheckType(intval($data_one[0]['tax_value']), $check_type);
             } else {
-                $vat = new Vat(Vat::RATE_NO);
+                $vatRate = Vat::RATE_NO;
             }
+
+            $vat = new Vat($vatRate);
 
             if ($item['total_discount'] > 0) {
                 $isDiscountInPositions = true;
@@ -255,7 +267,9 @@ class shopKomtetkassaPlugin extends shopPlugin {
         // наличие доставки
         if (intval($order['shipping']) > 0) {
             try {
-                $vat = new Vat($this->komtet_delivery_tax);
+                // Используем расчетную ставку НДС для предоплаты
+                $vatRate = $this->getVatForCheckType($this->komtet_delivery_tax, $check_type);
+                $vat = new Vat($vatRate);
             } catch (SdkException $e) {
                 $this->writeLog($e);
                 $vat = new Vat(Vat::RATE_NO);
@@ -473,7 +487,7 @@ class shopKomtetkassaPlugin extends shopPlugin {
     }
 
      /**
-     * Плагин принимает номера телефонов только в формате 7хххххххххх
+     * Плагин принимает номера телефонов только в формате +7хххххххххх
      * и ругается, если номер не соответствует формату и, соответственно, не принимает чек,
      * что недопустимо.
      * Валидатор пропускает номера телефонов МОпС РФ вида:
@@ -483,15 +497,15 @@ class shopKomtetkassaPlugin extends shopPlugin {
      *    1234567890
      * Все остальные номера игнорируются.
      * Валидатор проверяет номер телефона на соответствие формату и заменяет код страны
-     * на 7 в соответствии с форматом, который принимает плагин
+     * на +7 в соответствии с форматом, который принимает плагин
      */
-     private function validatePhone($phone) {
+    private function validatePhone($phone) {
         if (preg_match(self::PHONE_REGEXP, $phone, $matches)) {
-            return "7".$matches[2];
+            return "+7".$matches[2];
         } else {
-            return null;
+            return $phone;
         }
-     }
+    }
 
     //Плагин ругается, если email не соответствует формату и не принимает чек, что недопустимо.
     private function validateEmail($email) {
@@ -501,6 +515,25 @@ class shopKomtetkassaPlugin extends shopPlugin {
             return null;
         }
     }
+
+    # В чеках аванса и предоплаты для ставок НДС 5%, 7%, 10% и 20% необходимо использовать
+    # расчетную ставку 5/105%, 7/107%, 10/110% и 20/120%. Письмо ФНС России от 03.07.2018 N ЕД-4-20/12717
+    private function getVatForCheckType($vatRate, $check_type) {
+        if ($check_type === CalculationMethod::PRE_PAYMENT_FULL) {
+            switch ($vatRate) {
+                case 5:
+                    return 105;
+                case 7:
+                    return 107;
+                case 10:
+                    return 110;
+                case 20:
+                    return 120;
+            }
+        }
+        return $vatRate;
+    }
+
     //добавление в файл лог записи ошибок в зависимости от $error_type
     public function pluginError($error_type, $data = null) {
         $subj = "Ошибка плагина";

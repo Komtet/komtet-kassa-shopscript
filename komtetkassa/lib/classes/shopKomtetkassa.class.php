@@ -1,5 +1,7 @@
 <?php
 
+use Komtet\KassaSdk\v1\Payment;
+use Komtet\KassaSdk\v1\TaxSystem;
 use Komtet\KassaSdk\v1\Vat;
 
 class shopKomtetkassa {
@@ -10,23 +12,23 @@ class shopKomtetkassa {
 
     $data = array(
         array(
-            'value' => 0,
+            'value' => TaxSystem::COMMON,
             'title' => 'ОСН',
             ),
         array(
-            'value' => 1,
+            'value' => TaxSystem::SIMPLIFIED_IN,
             'title' => 'УСН доход',
             ),
         array(
-            'value' => 2,
+            'value' => TaxSystem::SIMPLIFIED_IN_OUT,
             'title' => 'УСН доход - расход',
             ),
         array(
-            'value' => 4,
-            'title' => 'ЕСН',
+            'value' => TaxSystem::UST,
+            'title' => 'ЕСХН',
             ),
         array(
-            'value' => 5,
+            'value' => TaxSystem::PATENT,
             'title' => 'Патент',
             )
 	    );
@@ -58,22 +60,6 @@ class shopKomtetkassa {
             array(
                 'value' => Vat::RATE_20,
                 'title' => 'НДС 20%',
-            ),
-            array(
-                'value' => Vat::RATE_105,
-                'title' => 'НДС 5/105',
-            ),
-            array(
-                'value' => Vat::RATE_107,
-                'title' => 'НДС 7/107',
-            ),
-            array(
-                'value' => Vat::RATE_110,
-                'title' => 'НДС 10/110',
-            ),
-            array(
-                'value' => Vat::RATE_120,
-                'title' => 'НДС 20/120',
             )
 	);
         return $data;
@@ -84,7 +70,7 @@ class shopKomtetkassa {
         $settings_name = 'komtet_payment_types';
         $spm = new shopPluginModel();
         $methods = $spm->listPlugins('payment');
-        $plugin = waSystem::getInstance()->getPlugin($plugin_id, true);	    
+        $plugin = waSystem::getInstance()->getPlugin($plugin_id, true);
         $namespace = wa()->getApp().'_'.$plugin_id;
         $settings = $plugin->getSettings($settings_name);
         $def_ns = $plugin->getSettings("komtet_tax_type");
@@ -98,7 +84,7 @@ class shopKomtetkassa {
                     <th>Чек</th>
                     <th>Система налогообложения</th>
                 </tr>
-HTML;
+        HTML;
 
         foreach($methods as $k => $v) {
             $params = array(
@@ -123,7 +109,7 @@ HTML;
                 )
             );
 
-            $selected_type = isset($settings[$v['id']]) ? $settings[$v['id']]['fisc_payment_type'] : 'card';
+            $selected_type = isset($settings[$v['id']]) ? $settings[$v['id']]['fisc_payment_type'] : Payment::TYPE_CARD;
             $payment_method = waHtmlControl::getControl(
                 waHtmlControl::SELECT,
                 'fisc_payment_type',
@@ -133,11 +119,11 @@ HTML;
                         'value' => $selected_type,
                         'options' => array(
                             array(
-                                'value' => 'card',
+                                'value' => Payment::TYPE_CARD,
                                 'title' => 'Электронный платеж'
                             ),
                             array(
-                                'value' => 'cash',
+                                'value' => Payment::TYPE_CASH,
                                 'title' => 'Наличные'
                             ),
                         )
@@ -195,7 +181,7 @@ HTML;
                 .on('change', enable_disable_select)
                 .each(enable_disable_select)
             });
-JS;
+        JS;
         $controls .= '</script>';
         return $controls;
     }

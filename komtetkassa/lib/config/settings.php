@@ -1,4 +1,9 @@
 <?php
+
+use Komtet\KassaSdk\v1\Payment;
+use Komtet\KassaSdk\v1\TaxSystem;
+use Komtet\KassaSdk\v1\Vat;
+
 return array(
     'komtet_shop_id'  => array(
         'title'        => "ID магазина",
@@ -27,7 +32,7 @@ return array(
         'description'  => "Систему налогообложения можно задать отдельно для каждого способа оплаты (см. ниже). ".
                           "Данная настройка будет учитываться для новых способов оплаты, добавленных ПОСЛЕ сохранения настроек ".
                           "данного плагина.<br><br>",
-        'value'        => 1, // значение по умолчанию
+        'value'        => TaxSystem::SIMPLIFIED_IN, // значение по умолчанию
         'control_type' => waHtmlControl::SELECT,
         'options_callback' => array('shopKomtetkassa', 'taxTypesValues')
     ),
@@ -56,6 +61,13 @@ return array(
         'control_type' => waHtmlControl::CUSTOM . ' shopKomtetkassa::getPaymentTypes'
     ),
 
+    'komtet_internet'  => array(
+        'title'        => "Признак расчета в сети «Интернет»",
+        'description'  => "Признак применения ККТ при осуществлении расчета в безналичном порядке в сети «Интернет».",
+        'value'        => 0, // значение по умолчанию
+        'control_type' => waHtmlControl::CHECKBOX,
+    ),
+
     'komtet_use_item_discount'  => array(
         'title'        => "Учитывать скидки в позициях",
         'description'  => "Включить если используются сторонние плагины, применяющие скидки к позициям, а не ко всему чеку.",
@@ -65,7 +77,7 @@ return array(
 
     'komtet_delivery_tax'  => array(
         'title'        => "Ставка налога услуги \"Доставка\"",
-        'value'        => 'no', // значение по умолчанию
+        'value'        => Vat::RATE_NO, // значение по умолчанию
         'control_type' => waHtmlControl::SELECT,
         'options_callback' => array('shopKomtetkassa', 'vatValues')
     ),
