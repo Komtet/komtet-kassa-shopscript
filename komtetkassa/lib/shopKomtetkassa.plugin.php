@@ -174,9 +174,7 @@ class shopKomtetkassaPlugin extends shopPlugin {
             $user = $customer_email;
         } elseif (!empty($customer_phone)) {
             $validated_phone = $this->validatePhone($customer_phone);
-            if ($validated_phone !== null) {
-                $user = $validated_phone;
-            }
+            $user = $validated_phone;
         }
 
         $tax_type = isset($this->komtet_payment_types[$payment_id])
