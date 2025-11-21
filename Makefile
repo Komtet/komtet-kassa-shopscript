@@ -9,9 +9,6 @@ build:  ## Собрать контейнер
 stop: ## Остановить все контейнеры
 	@docker-compose down
 
-start_web5: stop  ## Запустить контейнер
-	@docker-compose up -d web5
-
 start_web7: stop  ## Запустить контейнер
 	@docker-compose up -d web7
 
