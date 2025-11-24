@@ -8,7 +8,7 @@ WORKDIR /var/www/html
 COPY php .
 
 
-FROM php:8.0-apache as php8
+FROM php:8.2-apache as php8
 RUN apt-get update && apt-get install -y \
     zlib1g-dev \
     libzip-dev \
