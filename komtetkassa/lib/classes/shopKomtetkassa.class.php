@@ -31,7 +31,7 @@ class shopKomtetkassa {
             'value' => TaxSystem::PATENT,
             'title' => 'Патент',
             )
-       );
+        );
         return $data;
     }
 
