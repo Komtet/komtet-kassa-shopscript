@@ -17,7 +17,9 @@ start_web8: stop  ## Запустить контейнер
 
 update:  ## Установить/Обновить модуль
 	@rm -rf php/wa-apps/shop/plugins/komtetkassa &&\
-	 cp -r komtetkassa php/wa-apps/shop/plugins
+	 echo "Старая папка удалена"
+	@cp -r komtetkassa php/wa-apps/shop/plugins &&\
+	 echo "Новая папка скопирована"
 
 release:  ## Архивировать для загрузки в маркет
 	@tar\
