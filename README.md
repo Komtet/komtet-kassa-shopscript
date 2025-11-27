@@ -22,6 +22,8 @@ make start_web7
 sudo chmod -R 777 php
 ```
 * Проект будет доступен по адресу: localhost:8110;
+* Админ-панель будет доступна по адресу: http://localhost:8110/index.php/webasyst/site/#/pages/
+
 * Настройки подключения к бд MySQL:
 ```sh
 Сервер: mysql
@@ -34,15 +36,15 @@ sudo chmod -R 777 php
 * Собрать проект
 ```sh
 make build
-```
-* Запустить проект на php5.6
-```sh
-make start_web5
-```
 
-* Запустить проект на php7.2
+* Запустить проект на php7.4
 ```sh
 make start_web7
+```
+
+* Запустить проект на php8.2
+```sh
+make start_web8
 ```
 
 * Остановить проект

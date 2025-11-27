@@ -516,8 +516,9 @@ class shopKomtetkassaPlugin extends shopPlugin {
         }
     }
 
-    # В чеках аванса и предоплаты для ставок НДС 5%, 7%, 10% и 20% необходимо использовать
-    # расчетную ставку 5/105%, 7/107%, 10/110% и 20/120%. Письмо ФНС России от 03.07.2018 N ЕД-4-20/12717
+    // В чеках аванса и предоплаты для ставок НДС 5%, 7%, 10%, 20% и 22% необходимо использовать
+    // расчетную ставку 5/105, 7/107, 10/110, 20/120 и 22/122.
+    // Письмо ФНС России от 03.07.2018 N ЕД-4-20/12717
     private function getVatForCheckType($vatRate, $check_type) {
         if ($check_type === CalculationMethod::PRE_PAYMENT_FULL) {
             switch ($vatRate) {
@@ -529,6 +530,8 @@ class shopKomtetkassaPlugin extends shopPlugin {
                     return 110;
                 case 20:
                     return 120;
+                case 22:
+                    return 122;
             }
         }
         return $vatRate;

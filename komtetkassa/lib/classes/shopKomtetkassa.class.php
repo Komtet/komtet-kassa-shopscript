@@ -31,7 +31,7 @@ class shopKomtetkassa {
             'value' => TaxSystem::PATENT,
             'title' => 'Патент',
             )
-	    );
+        );
         return $data;
     }
 
@@ -60,6 +60,10 @@ class shopKomtetkassa {
             array(
                 'value' => Vat::RATE_20,
                 'title' => 'НДС 20%',
+            ),
+            array(
+                'value' => Vat::RATE_22,
+                'title' => 'НДС 22%',
             )
 	);
         return $data;
