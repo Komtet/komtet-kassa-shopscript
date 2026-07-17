@@ -182,14 +182,17 @@ class shopKomtetkassaPlugin extends shopPlugin {
 
         $buyer = new Buyer();
 
-        if (!empty($order->getContactField('email', 'default'))) {
-            $buyer->setEmail($order->getContactField('email', 'default'));
+        $order_email = $order->getContactField('email', 'default');
+        $order_phone = $order->getContactField('phone', 'default');
+        if (!empty($order_email)) {
+            $buyer->setEmail($order_email);
+        } elseif (!empty($order_phone)) {
+            $valid_phone = $this->validatePhone($order_phone);
+            if ($valid_phone) {
+                $buyer->setPhone($valid_phone);
+            }
         } else {
             $buyer->setEmail($this->komtet_alert_email);
-        }
-
-        if (!empty($order->getContactField('phone', 'default'))) {
-            $buyer->setPhone($this->validatePhone($order->getContactField('phone', 'default')));
         }
 
         $tax_type = isset($this->komtet_payment_types[$payment_id])
