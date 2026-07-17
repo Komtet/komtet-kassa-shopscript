@@ -7,22 +7,21 @@ use Komtet\KassaSdk\v1\Vat;
 return array(
     'komtet_shop_id'  => array(
         'title'        => "ID магазина",
-        'description'  => "Идентификатор вы найдете в личном кабинете КОМТЕТ: <a href='https://kassa.komtet.ru/manage/shops'>Магазины</a><br><br>",
+        'description'  => "Идентификатор вы найдете в личном кабинете КОМТЕТ в разделе \"Магазины\"<br><br>",
         'value'        => '', // значение по умолчанию
         'control_type'=> waHtmlControl::INPUT,
     ),
 
     'komtet_secret_key'  => array(
         'title'        => "Секретный ключ магазина",
-        'description'  => "Ключ вы найдете в личном кабинете КОМТЕТ: " .
-                          "<a href='https://kassa.komtet.ru/manage/shops'>Магазины</a><br><br>",
+        'description'  => "Ключ вы найдете в личном кабинете КОМТЕТ в разделе \"Магазины\"<br><br>",
         'value'        => '', // значение по умолчанию
         'control_type'=> waHtmlControl::INPUT,
     ),
 
     'komtet_queue_id'  => array(
         'title'        => "ID очереди",
-        'description'  => "Идентификатор вы найдете в личном кабинете КОМТЕТ: <a href='https://kassa.komtet.ru/manage/poses'>Кассы</a><br><br>",
+        'description'  => "Идентификатор вы найдете в личном кабинете КОМТЕТ в разделе \"Кассы\"<br><br>",
         'value'        => '', // значение по умолчанию
         'control_type'=> waHtmlControl::INPUT,
     ),
@@ -100,15 +99,13 @@ return array(
 
     'komtet_success_url'  => array(
         'title'        => "Success url",
-        'description'  => "Скопируйте значение данного поля и вставьте его в личном кабинете КОМТЕТ: " .
-                          "<a href='https://kassa.komtet.ru/manage/shops'>Магазины</a><br><br>",
+        'description'  => "Скопируйте значение данного поля и вставьте его в личном кабинете КОМТЕТ \"Магазины\"<br><br>",
         'control_type' => waHtmlControl::CUSTOM.' shopKomtetkassa::getSuccessUrl',
     ),
 
     'komtet_failure_url'  => array(
         'title'        => "Failure url",
-        'description'  => "Скопируйте значение данного поля и вставьте его в личном кабинете КОМТЕТ: " .
-                          "<a href='https://kassa.komtet.ru/manage/shops'>Магазины</a><br><br>",
+        'description'  => "Скопируйте значение данного поля и вставьте его в личном кабинете КОМТЕТ \"Магазины\"<br><br>",
         'control_type' => waHtmlControl::CUSTOM.' shopKomtetkassa::getFailureUrl',
     ),
 

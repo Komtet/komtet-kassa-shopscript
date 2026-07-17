@@ -15,23 +15,6 @@ services:
     ports:
       - "9908:3306"
 
-  web7:
-    image: ss_web:last
-    build:
-      context: .
-      target: php7
-    container_name: web7
-    depends_on:
-      - db
-    volumes:
-      - ./php/:/var/www/html/
-    ports:
-      - "8110:80"
-    links:
-      - db:mysql
-    stdin_open: true
-    tty: true
-
   web8:
     image: ss_web:last
     build:

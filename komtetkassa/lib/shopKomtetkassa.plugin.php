@@ -10,7 +10,7 @@ use Komtet\KassaSdk\v2\MarkCode;
 use Komtet\KassaSdk\v2\Measure;
 use Komtet\KassaSdk\v2\Payment;
 use Komtet\KassaSdk\v2\PaymentMethod;
-use Komtet\KassaSdk\v2\PaymentObbject;
+use Komtet\KassaSdk\v2\PaymentObject;
 use Komtet\KassaSdk\v2\Position;
 use Komtet\KassaSdk\v2\SectoralItemProps;
 use Komtet\KassaSdk\v2\TaxSystem;
@@ -49,6 +49,10 @@ class shopKomtetkassaPlugin extends shopPlugin {
         PaymentMethod::FULL_PAYMENT => PaymentObject::PRODUCT,
     );
 
+    const DEFAULT_FEDERAL_ID = '030';
+    const DEFAULT_DATE = '21.11.2023';
+    const DEFAULT_NUMBER = '1944';
+
     private $komtet_alert;
     private $komtet_alert_email;
     private $komtet_delivery_tax;
@@ -62,6 +66,10 @@ class shopKomtetkassaPlugin extends shopPlugin {
     private $komtet_tax_type;
     private $komtet_use_item_discount;
 
+    protected $status_check_prepayment;
+    protected $status_check_fullpayment;
+    protected $main_shop_email;
+    protected $wa_version;
 
     private function init() {
         $this->komtet_alert = (bool) $this->getSettings('komtet_alert');
@@ -181,7 +189,7 @@ class shopKomtetkassaPlugin extends shopPlugin {
         }
 
         if (!empty($order->getContactField('phone', 'default'))) {
-            $buyer->setPhone($this->validatePhone($order->getContactField('phone', 'default')););
+            $buyer->setPhone($this->validatePhone($order->getContactField('phone', 'default')));
         }
 
         $tax_type = isset($this->komtet_payment_types[$payment_id])
@@ -257,9 +265,7 @@ class shopKomtetkassaPlugin extends shopPlugin {
                     $position = $this->generatePosition($item, 1, $vat, $check_type);
 
                     if ($check_type != PaymentMethod::PRE_PAYMENT_FULL) {
-                        $mark_code = new MarkCode(MarkCode::GS1M, $mark_codes[$i]);
-
-                        $marking_props = $this->getMarkingProps($mark_codes);
+                        $marking_props = $this->getMarkingProps($mark_codes[$i]);
 
                         $position->setMarkCode(new MarkCode(MarkCode::GS1M, $marking_props['code']));
 
@@ -661,6 +667,50 @@ class shopKomtetkassaPlugin extends shopPlugin {
         $position->setId($item['sku'] ?: $item['product_id']);
 
         return $position;
+    }
+
+    private function getMarkingProps($markingCode) {
+        $decoded = base64_decode($markingCode, true);
+        if ($decoded !== false && mb_check_encoding($decoded, 'UTF-8')) {
+            $decodedMarkingCode = $decoded;
+        } else {
+            $decodedMarkingCode = $markingCode;
+        }
+
+        $result = [
+            'code' => $decodedMarkingCode,
+            'sectoral_props' => null,
+        ];
+
+        if (is_string($decodedMarkingCode) && strpos($decodedMarkingCode, '{') === 0) {
+            $data = json_decode($decodedMarkingCode, true);
+            if (is_array($data) && isset($data['code'])) {
+                $result['code'] = $data['code'];
+
+                $reqId = $data['reqId'] ?? null;
+                $reqTimestamp = $data['reqTimestamp'] ?? null;
+                $inst = $data['inst'] ?? null;
+                $version = $data['version'] ?? null;
+
+                if ($reqId && $reqTimestamp) {
+
+                    $value = 'UUID=' . $reqId . '&Time=' . $reqTimestamp;
+
+                    if ($inst && $version) {
+                        $value = $value . '&Inst=' . $inst . '&Ver=' . $version;
+                    }
+
+                    $result['sectoral_props'] = [
+                        'federal_id' => self::DEFAULT_FEDERAL_ID,
+                        'date'       => self::DEFAULT_DATE,
+                        'number'     => self::DEFAULT_NUMBER,
+                        'value'      => $value,
+                    ];
+                }
+            }
+        }
+
+        return $result;
     }
 
 }

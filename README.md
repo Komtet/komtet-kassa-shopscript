@@ -23,6 +23,8 @@ sudo chmod -R 777 php
 ```
 * Проект будет доступен по адресу: localhost:8110;
 * Админ-панель будет доступна по адресу: http://localhost:8110/index.php/webasyst/site/#/pages/
+* Настройки плагина будут доступны по адресу: http://localhost:8110/index.php/webasyst/shop/?module=plugins#/komtetkassa
+  или можно зайти нажав кнопку "Shop-Script" в верхнем меню, далее "Плагины"->"Установлено" в левом меню, далее выбрать "КОМТЕТ Касса"
 
 * Настройки подключения к бд MySQL:
 ```sh
