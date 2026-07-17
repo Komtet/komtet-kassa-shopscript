@@ -15,7 +15,7 @@ make build
 ## Установка CMS
 * Запустить контейнер
 ```sh
-make start_web7
+make start_web8
 ```
 * Установить права на папку php
 ```sh
@@ -38,11 +38,6 @@ sudo chmod -R 777 php
 * Собрать проект
 ```sh
 make build
-
-* Запустить проект на php7.4
-```sh
-make start_web7
-```
 
 * Запустить проект на php8.2
 ```sh
