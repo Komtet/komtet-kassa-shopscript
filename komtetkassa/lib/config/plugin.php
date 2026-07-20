@@ -3,7 +3,7 @@
 return array(
     'name' => 'КОМТЕТ Касса',
     'description' => 'Фискализация платежей с помощью сервиса КОМТЕТ Касса',
-    'version' => '2.4.0',
+    'version' => '3.0.0',
     'vendor' => 1087963,
     'frontend' => true,
     'handlers' => array(
