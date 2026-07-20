@@ -15,7 +15,7 @@ make build
 ## Установка CMS
 * Запустить контейнер
 ```sh
-make start_web7
+make start_web8
 ```
 * Установить права на папку php
 ```sh
@@ -23,6 +23,8 @@ sudo chmod -R 777 php
 ```
 * Проект будет доступен по адресу: localhost:8110;
 * Админ-панель будет доступна по адресу: http://localhost:8110/index.php/webasyst/site/#/pages/
+* Настройки плагина будут доступны по адресу: http://localhost:8110/index.php/webasyst/shop/?module=plugins#/komtetkassa
+  или можно зайти нажав кнопку "Shop-Script" в верхнем меню, далее "Плагины"->"Установлено" в левом меню, далее выбрать "КОМТЕТ Касса"
 
 * Настройки подключения к бд MySQL:
 ```sh
@@ -36,11 +38,6 @@ sudo chmod -R 777 php
 * Собрать проект
 ```sh
 make build
-
-* Запустить проект на php7.4
-```sh
-make start_web7
-```
 
 * Запустить проект на php8.2
 ```sh
